@@ -147,16 +147,16 @@ public class NotificationOperationAnalyzer
     private bool IsMapper(ITypeSymbol? type)
     {
         var display = type?.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat) ?? "";
-        return display.Contains("IMapper", StringComparison.Ordinal) ||
-               display.Contains("AutoMapper", StringComparison.Ordinal);
+        return display.IndexOf("IMapper", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               display.IndexOf("AutoMapper", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private bool IsRepositoryCall(IMethodSymbol method)
     {
         var receiverType = method.ReceiverType ?? method.ContainingType;
         var typeName = receiverType?.Name ?? "";
-        return typeName.Contains("Repository", StringComparison.OrdinalIgnoreCase) ||
-               typeName.Contains("DbContext", StringComparison.OrdinalIgnoreCase);
+        return typeName.IndexOf("Repository", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               typeName.IndexOf("DbContext", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private ITypeSymbol? DetermineRequestType(IMethodSymbol method)
@@ -209,21 +209,21 @@ public class NotificationOperationAnalyzer
 
     private string DetermineRepositoryOperation(string methodName)
     {
-        if (methodName.Contains("Add", StringComparison.OrdinalIgnoreCase) ||
-            methodName.Contains("Insert", StringComparison.OrdinalIgnoreCase) ||
-            methodName.Contains("Create", StringComparison.OrdinalIgnoreCase))
+        if (methodName.IndexOf("Add", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            methodName.IndexOf("Insert", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            methodName.IndexOf("Create", StringComparison.OrdinalIgnoreCase) >= 0)
         {
             return "insert";
         }
 
-        if (methodName.Contains("Update", StringComparison.OrdinalIgnoreCase) ||
-            methodName.Contains("Save", StringComparison.OrdinalIgnoreCase))
+        if (methodName.IndexOf("Update", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            methodName.IndexOf("Save", StringComparison.OrdinalIgnoreCase) >= 0)
         {
             return "update";
         }
 
-        if (methodName.Contains("Delete", StringComparison.OrdinalIgnoreCase) ||
-            methodName.Contains("Remove", StringComparison.OrdinalIgnoreCase))
+        if (methodName.IndexOf("Delete", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            methodName.IndexOf("Remove", StringComparison.OrdinalIgnoreCase) >= 0)
         {
             return "delete";
         }

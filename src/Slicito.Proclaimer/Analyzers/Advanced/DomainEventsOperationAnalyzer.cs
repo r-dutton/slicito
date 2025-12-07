@@ -91,9 +91,9 @@ public class DomainEventsOperationAnalyzer
         var typeName = type?.Name ?? "";
         var display = type?.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat) ?? "";
         
-        return typeName.Contains("EventDispatcher", StringComparison.OrdinalIgnoreCase) ||
-               typeName.Contains("DomainEvents", StringComparison.OrdinalIgnoreCase) ||
-               display.Contains("IDomainEvent", StringComparison.Ordinal);
+        return typeName.IndexOf("EventDispatcher", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               typeName.IndexOf("DomainEvents", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               display.IndexOf("IDomainEvent", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private ITypeSymbol? DetermineEventType(IMethodSymbol method)

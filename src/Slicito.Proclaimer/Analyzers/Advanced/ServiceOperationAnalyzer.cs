@@ -136,25 +136,25 @@ public class ServiceOperationAnalyzer
     private bool IsValidatorCall(IMethodSymbol method)
     {
         return method.Name == "Validate" || method.Name == "ValidateAsync" ||
-               method.ContainingType?.Name.Contains("Validator", StringComparison.OrdinalIgnoreCase) == true;
+               method.ContainingType?.Name.IndexOf("Validator", StringComparison.OrdinalIgnoreCase) >= 0 == true;
     }
 
     private bool IsLoggerType(ITypeSymbol? type)
     {
         var typeName = type?.Name ?? "";
-        return typeName.Contains("ILogger", StringComparison.Ordinal) ||
-               typeName.Contains("Logger", StringComparison.OrdinalIgnoreCase);
+        return typeName.IndexOf("ILogger", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               typeName.IndexOf("Logger", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private string? ExtractLogLevel(string methodName)
     {
-        if (methodName.Contains("Debug", StringComparison.OrdinalIgnoreCase)) return "Debug";
-        if (methodName.Contains("Info", StringComparison.OrdinalIgnoreCase)) return "Information";
-        if (methodName.Contains("Warn", StringComparison.OrdinalIgnoreCase)) return "Warning";
-        if (methodName.Contains("Error", StringComparison.OrdinalIgnoreCase)) return "Error";
-        if (methodName.Contains("Critical", StringComparison.OrdinalIgnoreCase) ||
-            methodName.Contains("Fatal", StringComparison.OrdinalIgnoreCase)) return "Critical";
-        if (methodName.Contains("Trace", StringComparison.OrdinalIgnoreCase)) return "Trace";
+        if (methodName.IndexOf("Debug", StringComparison.OrdinalIgnoreCase) >= 0) return "Debug";
+        if (methodName.IndexOf("Info", StringComparison.OrdinalIgnoreCase) >= 0) return "Information";
+        if (methodName.IndexOf("Warn", StringComparison.OrdinalIgnoreCase) >= 0) return "Warning";
+        if (methodName.IndexOf("Error", StringComparison.OrdinalIgnoreCase) >= 0) return "Error";
+        if (methodName.IndexOf("Critical", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            methodName.IndexOf("Fatal", StringComparison.OrdinalIgnoreCase) >= 0) return "Critical";
+        if (methodName.IndexOf("Trace", StringComparison.OrdinalIgnoreCase) >= 0) return "Trace";
         
         return null;
     }
@@ -162,8 +162,8 @@ public class ServiceOperationAnalyzer
     private bool IsCacheService(ITypeSymbol? type)
     {
         var display = type?.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat) ?? "";
-        return display.Contains("IMemoryCache", StringComparison.Ordinal) ||
-               display.Contains("IDistributedCache", StringComparison.Ordinal);
+        return display.IndexOf("IMemoryCache", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               display.IndexOf("IDistributedCache", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private bool TryResolveOptionsType(ITypeSymbol? type, out ITypeSymbol optionsType)
@@ -174,7 +174,7 @@ public class ServiceOperationAnalyzer
             return false;
 
         var display = namedType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
-        if (!display.Contains("IOptions", StringComparison.Ordinal))
+        if (display.IndexOf("IOptions", StringComparison.OrdinalIgnoreCase) < 0)
             return false;
 
         if (namedType.TypeArguments.Length > 0)
@@ -191,8 +191,8 @@ public class ServiceOperationAnalyzer
         var receiver = method.ReceiverType ?? method.ContainingType;
         var display = receiver?.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat) ?? "";
         
-        return display.Contains("IConfiguration", StringComparison.Ordinal) ||
-               (method.IsIndexer && display.Contains("Configuration", StringComparison.OrdinalIgnoreCase));
+        return display.IndexOf("IConfiguration", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               (method.Name == "get_Item" && display.IndexOf("Configuration", StringComparison.OrdinalIgnoreCase) >= 0);
     }
 
     private string? ExtractConfigurationKey(IMethodSymbol method)
