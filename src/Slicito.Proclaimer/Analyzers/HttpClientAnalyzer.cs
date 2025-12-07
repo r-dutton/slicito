@@ -1,91 +1,94 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Operations;
 using Slicito.Abstractions;
+using Slicito.Abstractions.Facts;
+using Slicito.Common.Implementation;
+using Slicito.DotNet;
+using Slicito.DotNet.Facts;
 
 namespace Slicito.Proclaimer.Analyzers;
 
 /// <summary>
-/// Analyzes code to detect HttpClient usage and outgoing HTTP requests.
+/// Analyzes methods to detect HttpClient usage and outgoing HTTP requests.
 /// </summary>
 internal class HttpClientAnalyzer
 {
-    private readonly IMethodSymbol _method;
-    private readonly IOperation _methodBody;
-    private readonly ElementId _methodElementId;
+    private readonly DotNetSolutionContext _dotnetContext;
+    private readonly DotNetTypes _dotnetTypes;
     
-    public HttpClientAnalyzer(IMethodSymbol method, IOperation methodBody, ElementId methodElementId)
+    public HttpClientAnalyzer(DotNetSolutionContext dotnetContext, DotNetTypes dotnetTypes)
     {
-        _method = method;
-        _methodBody = methodBody;
-        _methodElementId = methodElementId;
+        _dotnetContext = dotnetContext;
+        _dotnetTypes = dotnetTypes;
     }
     
     /// <summary>
-    /// Discovers HTTP client usages in the method.
+    /// Discovers all HTTP client usages by analyzing all methods in the solution.
     /// </summary>
-    public ImmutableArray<HttpClientUsage> DiscoverHttpClientUsages()
+    public async Task<ImmutableArray<HttpClientUsage>> DiscoverAllHttpClientUsagesAsync()
     {
         var usages = ImmutableArray.CreateBuilder<HttpClientUsage>();
         
-        // Walk the operation tree looking for HttpClient method invocations
-        WalkOperations(_methodBody, usages);
+        // Get all methods from the DotNet slice
+        var allMethods = await _dotnetContext.Slice.GetRootElementsAsync(_dotnetTypes.Method);
+        var dotnetFragment = _dotnetContext.TypedSliceFragment;
+        
+        foreach (var method in allMethods)
+        {
+            // Create a procedure element wrapper for this method
+            var procedureElement = new SimpleProcedureElement(method.Id);
+            
+            // Get all operations for this method
+            var operations = await dotnetFragment.GetOperationsAsync(procedureElement);
+            
+            foreach (var operation in operations)
+            {
+                // Check if this is a call operation
+                var operationType = _dotnetContext.Slice.GetElementType(operation.Id);
+                if (!operationType.Value.IsSubsetOfOrEquals(_dotnetTypes.Call.Value))
+                    continue;
+                
+                // Get the symbol for the called method
+                var symbol = _dotnetContext.GetSymbol(operation.Id);
+                if (symbol is not IMethodSymbol methodSymbol)
+                    continue;
+                
+                var containingType = methodSymbol.ContainingType;
+                
+                // Check if this is an HttpClient method call
+                if (!IsHttpClientType(containingType))
+                    continue;
+                
+                var methodName = methodSymbol.Name;
+                
+                // Detect HTTP verb methods
+                string? httpVerb = null;
+                if (methodName == "GetAsync" || methodName == "GetStringAsync" || 
+                    methodName == "GetByteArrayAsync" || methodName == "GetStreamAsync")
+                    httpVerb = "GET";
+                else if (methodName == "PostAsync")
+                    httpVerb = "POST";
+                else if (methodName == "PutAsync")
+                    httpVerb = "PUT";
+                else if (methodName == "DeleteAsync")
+                    httpVerb = "DELETE";
+                else if (methodName == "PatchAsync")
+                    httpVerb = "PATCH";
+                
+                if (httpVerb == null)
+                    continue;
+                
+                // Create HTTP client usage
+                usages.Add(new HttpClientUsage(
+                    method.Id,
+                    operation.Id,
+                    httpVerb,
+                    null  // URL extraction would require constant propagation analysis
+                ));
+            }
+        }
         
         return usages.ToImmutable();
-    }
-    
-    private void WalkOperations(IOperation operation, ImmutableArray<HttpClientUsage>.Builder usages)
-    {
-        if (operation is IInvocationOperation invocation)
-        {
-            AnalyzeInvocation(invocation, usages);
-        }
-        
-        // Recursively visit child operations
-        foreach (var child in operation.ChildOperations)
-        {
-            WalkOperations(child, usages);
-        }
-    }
-    
-    private void AnalyzeInvocation(IInvocationOperation invocation, ImmutableArray<HttpClientUsage>.Builder usages)
-    {
-        var targetMethod = invocation.TargetMethod;
-        var containingType = targetMethod.ContainingType;
-        
-        // Check if this is an HttpClient method call
-        if (!IsHttpClientType(containingType))
-            return;
-        
-        var methodName = targetMethod.Name;
-        
-        // Detect HTTP verb methods: GetAsync, PostAsync, PutAsync, DeleteAsync, PatchAsync
-        string? httpVerb = null;
-        if (methodName == "GetAsync" || methodName == "GetStringAsync" || methodName == "GetByteArrayAsync" || methodName == "GetStreamAsync")
-            httpVerb = "GET";
-        else if (methodName == "PostAsync")
-            httpVerb = "POST";
-        else if (methodName == "PutAsync")
-            httpVerb = "PUT";
-        else if (methodName == "DeleteAsync")
-            httpVerb = "DELETE";
-        else if (methodName == "PatchAsync")
-            httpVerb = "PATCH";
-        else if (methodName == "SendAsync")
-            httpVerb = ExtractVerbFromHttpRequestMessage(invocation);
-        
-        if (httpVerb == null)
-            return;
-        
-        // Try to extract the URL
-        var url = ExtractUrl(invocation);
-        
-        usages.Add(new HttpClientUsage(
-            _methodElementId,
-            httpVerb,
-            url,
-            invocation.Syntax.GetLocation().GetLineSpan().StartLinePosition.Line
-        ));
     }
     
     private bool IsHttpClientType(ITypeSymbol type)
@@ -95,34 +98,15 @@ internal class HttpClientAnalyzer
                type.ContainingNamespace?.ToString() == "System.Net.Http";
     }
     
-    private string? ExtractUrl(IInvocationOperation invocation)
+    // Helper class to wrap ElementId as ICSharpProcedureElement
+    private class SimpleProcedureElement : ElementBase, ICSharpProcedureElement
     {
-        // Try to extract URL from first string argument
-        if (invocation.Arguments.Length > 0)
+        public SimpleProcedureElement(ElementId id) : base(id)
         {
-            var firstArg = invocation.Arguments[0];
-            
-            // Check for constant string
-            if (firstArg.Value.ConstantValue.HasValue && 
-                firstArg.Value.ConstantValue.Value is string url)
-            {
-                return url;
-            }
-            
-            // Check for string interpolation or concatenation
-            // For now, we'll mark as unknown if not a constant
-            return null;
         }
         
-        return null;
-    }
-    
-    private string? ExtractVerbFromHttpRequestMessage(IInvocationOperation invocation)
-    {
-        // For SendAsync, we need to look at the HttpRequestMessage parameter
-        // This is more complex and would require analyzing the request message creation
-        // For now, return null (unknown verb)
-        return null;
+        public string Runtime => DotNetAttributeValues.Runtime.DotNet;
+        public string Language => DotNetAttributeValues.Language.CSharp;
     }
 }
 
@@ -131,7 +115,7 @@ internal class HttpClientAnalyzer
 /// </summary>
 internal record HttpClientUsage(
     ElementId SourceMethodId,
+    ElementId CallOperationId,
     string HttpVerb,
-    string? TargetUrl,
-    int LineNumber
+    string? TargetUrl
 );

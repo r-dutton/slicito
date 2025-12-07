@@ -39,6 +39,7 @@ public class ProclaimerSliceFragmentBuilder
         var efTypes = await DiscoverEntityFrameworkTypesAsync();
         var repositories = await DiscoverRepositoriesAsync();
         var backgroundServices = await DiscoverBackgroundServicesAsync();
+        var httpClientUsages = await DiscoverHttpClientUsagesAsync();
         
         // Build the slice with discovered elements
         var builder = _sliceManager.CreateBuilder()
@@ -77,6 +78,12 @@ public class ProclaimerSliceFragmentBuilder
             builder.AddRootElements(_proclaimerTypes.EfDbContext, () => LoadDbContexts(efTypes.DbContexts));
         }
         
+        // EF Entities
+        if (efTypes.Entities.Length > 0)
+        {
+            builder.AddRootElements(_proclaimerTypes.EfEntity, () => LoadEfEntities(efTypes.Entities));
+        }
+        
         // Repositories
         if (repositories.Length > 0)
         {
@@ -87,6 +94,21 @@ public class ProclaimerSliceFragmentBuilder
         if (backgroundServices.Length > 0)
         {
             builder.AddRootElements(_proclaimerTypes.BackgroundService, () => LoadBackgroundServices(backgroundServices));
+        }
+        
+        // HTTP Client usages
+        if (httpClientUsages.Length > 0)
+        {
+            builder.AddRootElements(_proclaimerTypes.HttpClient, () => LoadHttpClients(httpClientUsages));
+            builder.AddElementAttribute(_proclaimerTypes.HttpClient, ProclaimerAttributeNames.Verb, LoadHttpClientVerb(httpClientUsages));
+            
+            // Add SendsRequest links from methods to HTTP clients
+            // The source is the method (any type), target is HttpClient
+            builder.AddLinks(
+                _proclaimerTypes.SendsRequest,
+                _dotnetTypes.Method,  // Source is any method
+                _proclaimerTypes.HttpClient,  // Target is HTTP client
+                sourceId => LoadSendsRequestLinks(httpClientUsages, sourceId));
         }
         
         var slice = builder.Build();
@@ -266,6 +288,7 @@ public class ProclaimerSliceFragmentBuilder
     private async Task<EntityFrameworkTypesInfo> DiscoverEntityFrameworkTypesAsync()
     {
         var dbContexts = ImmutableArray.CreateBuilder<TypeElementInfo>();
+        var entities = ImmutableArray.CreateBuilder<TypeElementInfo>();
         var types = await GetAllTypesAsync();
         
         foreach (var type in types)
@@ -273,10 +296,32 @@ public class ProclaimerSliceFragmentBuilder
             if (EntityFrameworkAnalyzer.IsDbContext(type.Symbol))
             {
                 dbContexts.Add(type);
+                
+                // Also discover DbSet properties (entities)
+                var dbSetProperties = EntityFrameworkAnalyzer.GetDbSetProperties(type.Symbol);
+                foreach (var property in dbSetProperties)
+                {
+                    // Get the entity type from DbSet<TEntity>
+                    var propertyType = property.Type as INamedTypeSymbol;
+                    if (propertyType?.TypeArguments.Length == 1)
+                    {
+                        var entityType = propertyType.TypeArguments[0] as INamedTypeSymbol;
+                        if (entityType != null)
+                        {
+                            // Find the element ID for this entity type
+                            var entityTypeElement = types.FirstOrDefault(t => 
+                                SymbolEqualityComparer.Default.Equals(t.Symbol, entityType));
+                            if (entityTypeElement != null)
+                            {
+                                entities.Add(entityTypeElement);
+                            }
+                        }
+                    }
+                }
             }
         }
         
-        return new EntityFrameworkTypesInfo(dbContexts.ToImmutable());
+        return new EntityFrameworkTypesInfo(dbContexts.ToImmutable(), entities.ToImmutable());
     }
     
     private async Task<ImmutableArray<TypeElementInfo>> DiscoverRepositoriesAsync()
@@ -309,6 +354,12 @@ public class ProclaimerSliceFragmentBuilder
         }
         
         return services.ToImmutable();
+    }
+    
+    private async Task<ImmutableArray<HttpClientUsage>> DiscoverHttpClientUsagesAsync()
+    {
+        var httpClientAnalyzer = new HttpClientAnalyzer(_dotnetContext, _dotnetTypes);
+        return await httpClientAnalyzer.DiscoverAllHttpClientUsagesAsync();
     }
     
     private async Task<ImmutableArray<TypeElementInfo>> GetAllTypesAsync()
@@ -397,6 +448,52 @@ public class ProclaimerSliceFragmentBuilder
         return new ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>>(result);
     }
     
+    // EF Entity Loaders
+    private ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>> LoadEfEntities(
+        ImmutableArray<TypeElementInfo> entities)
+    {
+        var result = entities
+            .Select(e => new ISliceBuilder.PartialElementInfo(e.ElementId, _proclaimerTypes.EfEntity))
+            .ToArray();
+        return new ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>>(result);
+    }
+    
+    // HTTP Client Loaders
+    private ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>> LoadHttpClients(
+        ImmutableArray<HttpClientUsage> usages)
+    {
+        var result = usages
+            .Select(u => new ISliceBuilder.PartialElementInfo(u.CallOperationId, _proclaimerTypes.HttpClient))
+            .ToArray();
+        return new ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>>(result);
+    }
+    
+    private ISliceBuilder.LoadElementAttributeAsyncCallback LoadHttpClientVerb(
+        ImmutableArray<HttpClientUsage> usages)
+    {
+        var lookup = usages.ToImmutableDictionary(u => u.CallOperationId, u => u.HttpVerb);
+        
+        return elementId =>
+        {
+            var value = lookup.TryGetValue(elementId, out var verb) ? verb : "";
+            return new ValueTask<string>(value);
+        };
+    }
+    
+    private ValueTask<IEnumerable<ISliceBuilder.PartialLinkInfo>> LoadSendsRequestLinks(
+        ImmutableArray<HttpClientUsage> usages,
+        ElementId sourceMethodId)
+    {
+        // Find all HTTP client usages for this method
+        var methodUsages = usages
+            .Where(u => u.SourceMethodId == sourceMethodId)
+            .Select(u => new ISliceBuilder.PartialLinkInfo(
+                new ISliceBuilder.PartialElementInfo(u.CallOperationId, _proclaimerTypes.HttpClient)))
+            .ToArray();
+        
+        return new ValueTask<IEnumerable<ISliceBuilder.PartialLinkInfo>>(methodUsages);
+    }
+    
     // Supporting types
     private record TypeElementInfo(ElementId ElementId, INamedTypeSymbol Symbol);
     private record CqrsTypesInfo(
@@ -404,7 +501,9 @@ public class ProclaimerSliceFragmentBuilder
         ImmutableArray<TypeElementInfo> Handlers,
         ImmutableArray<TypeElementInfo> Notifications,
         ImmutableArray<TypeElementInfo> NotificationHandlers);
-    private record EntityFrameworkTypesInfo(ImmutableArray<TypeElementInfo> DbContexts);
+    private record EntityFrameworkTypesInfo(
+        ImmutableArray<TypeElementInfo> DbContexts,
+        ImmutableArray<TypeElementInfo> Entities);
     
     private record EndpointInfo(ElementId EndpointId, ElementId MethodId, string HttpMethod, string Route);
 }
