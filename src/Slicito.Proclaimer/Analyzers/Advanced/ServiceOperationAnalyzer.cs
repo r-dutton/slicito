@@ -7,12 +7,24 @@ using Slicito.DotNet;
 
 namespace Slicito.Proclaimer.Analyzers.Advanced;
 
+/// <summary>
+/// Analyzes service operations including invocations, field/property references, options usage, and logging.
+/// Ported from TheProclaimer's ServiceOperationVisitor.
+/// 
+/// LIMITATIONS vs TheProclaimer:
+/// - Does not use FlowPointsToFacade (requires Roslyn.Analyzers.DataFlow package)
+/// - Does not use FlowValueContentFacade (requires Roslyn.Analyzers.DataFlow package)
+/// - Field/property reference tracking is basic (no points-to analysis for type resolution)
+/// - Service instance resolution is simplified (no scoped service resolution)
+/// </summary>
 public record ServiceOperationAnalysisResult(
     ImmutableArray<ServiceUsageInvocation> ServiceUsages,
     ImmutableArray<OptionsUsageInvocation> OptionsUsages,
     ImmutableArray<ConfigurationUsageInvocation> ConfigurationUsages,
     ImmutableArray<ValidationCallInvocation> ValidationCalls,
-    ImmutableArray<LogInvocation> LogInvocations);
+    ImmutableArray<LogInvocation> LogInvocations,
+    ImmutableArray<FieldReferenceUsage> FieldReferences,
+    ImmutableArray<PropertyReferenceUsage> PropertyReferences);
 
 public record ServiceUsageInvocation(
     ElementId MethodId,
@@ -46,6 +58,20 @@ public record LogInvocation(
     string LogLevel,
     int LineNumber);
 
+public record FieldReferenceUsage(
+    ElementId MethodId,
+    ElementId OperationId,
+    string FieldName,
+    string FieldType,
+    int LineNumber);
+
+public record PropertyReferenceUsage(
+    ElementId MethodId,
+    ElementId OperationId,
+    string PropertyName,
+    string PropertyType,
+    int LineNumber);
+
 public class ServiceOperationAnalyzer
 {
     private readonly DotNetSolutionContext _dotnetContext;
@@ -64,6 +90,8 @@ public class ServiceOperationAnalyzer
         var configUsages = ImmutableArray.CreateBuilder<ConfigurationUsageInvocation>();
         var validationCalls = ImmutableArray.CreateBuilder<ValidationCallInvocation>();
         var logInvocations = ImmutableArray.CreateBuilder<LogInvocation>();
+        var fieldReferences = ImmutableArray.CreateBuilder<FieldReferenceUsage>();
+        var propertyReferences = ImmutableArray.CreateBuilder<PropertyReferenceUsage>();
 
         var procedureElement = new SimpleProcedureElement(methodId);
         var operations = await _dotnetContext.TypedSliceFragment.GetOperationsAsync(procedureElement);
@@ -71,6 +99,12 @@ public class ServiceOperationAnalyzer
         foreach (var operation in operations)
         {
             var operationType = _dotnetContext.Slice.GetElementType(operation.Id);
+            
+            // TODO: Add support for field and property reference operations
+            // Currently only processes Call operations due to Slicito's operation type system
+            // TheProclaimer processes IFieldReferenceOperation and IPropertyReferenceOperation
+            // via overriding Visit(IOperation) method in FlowDataFlowOperationVisitor
+            
             if (!operationType.Value.IsSubsetOfOrEquals(_dotnetTypes.Call.Value))
                 continue;
 
@@ -110,6 +144,8 @@ public class ServiceOperationAnalyzer
             }
             else if (IsConfigurationAccess(methodSymbol))
             {
+                // TODO: Extract configuration key from string literal
+                // Requires FlowValueContentFacade for constant propagation
                 var configKey = ExtractConfigurationKey(methodSymbol);
                 configUsages.Add(new ConfigurationUsageInvocation(
                     methodId, operation.Id, configKey, lineNumber));
@@ -130,7 +166,9 @@ public class ServiceOperationAnalyzer
             optionsUsages.ToImmutable(),
             configUsages.ToImmutable(),
             validationCalls.ToImmutable(),
-            logInvocations.ToImmutable());
+            logInvocations.ToImmutable(),
+            fieldReferences.ToImmutable(),
+            propertyReferences.ToImmutable());
     }
 
     private bool IsValidatorCall(IMethodSymbol method)

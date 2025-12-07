@@ -11,6 +11,16 @@ namespace Slicito.Proclaimer.Analyzers.Advanced;
 /// <summary>
 /// Comprehensive operation analyzer that walks IOperation trees to detect multiple patterns.
 /// This is inspired by TheProclaimer's multiple operation visitors but unified for Slicito.
+/// Ported from TheProclaimer's ControllerOperationVisitor, EfOperationVisitor, and MappingOperationVisitor.
+/// 
+/// LIMITATIONS vs TheProclaimer:
+/// - Does not use FlowDataFlowOperationVisitor base class
+/// - Does not have access to FlowPointsToFacade or FlowValueContentFacade
+/// - EF entity type extraction is simplified (no deep type flow analysis)
+/// - Mapping profile detection not implemented
+/// 
+/// TODO: Add CreateMap configuration detection for AutoMapper profiles
+/// TODO: Add LINQ query pattern analysis (Where, Select, Include chains)
 /// </summary>
 public class ComprehensiveOperationAnalyzer
 {

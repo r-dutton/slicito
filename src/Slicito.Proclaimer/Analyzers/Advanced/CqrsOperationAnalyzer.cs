@@ -36,6 +36,11 @@ public record MediatorPublishInvocation(
 /// <summary>
 /// Analyzes IOperation trees to detect CQRS/MediatR patterns.
 /// Extends Slicito's operation analysis with Proclaimer-specific pattern detection.
+/// Ported from TheProclaimer's CqrsOperationVisitor.
+/// 
+/// LIMITATIONS vs TheProclaimer:
+/// - Does not use FlowPointsToFacade for request/response type resolution
+/// - Simplified handler linking (type-based only, no interprocedural analysis)
 /// </summary>
 public class CqrsOperationAnalyzer
 {

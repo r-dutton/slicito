@@ -366,12 +366,53 @@ While I have basic type detection, TheProclaimer has extensive syntax analysis:
 - ✅ **Configuration usage tracking** (basic)
 
 **What's Still Missing (Advanced Features):**
-- ⏳ **Full points-to analysis** (requires Roslyn.Analyzers.DataFlow)
-- ⏳ **Value content tracking** (for route/config key extraction)
-- ⏳ **HTTP route parameter extraction** from string interpolation
-- ⏳ **Deferred linking** for cross-solution analysis
-- ⏳ **Provenance metadata** (Static/Interprocedural/Synthetic)
-- ⏳ **Confidence scores** for analysis results
+
+These features require infrastructure not available in Slicito without Roslyn.Analyzers.DataFlow package:
+
+1. **FlowPointsToFacade** - Points-to analysis for precise instance resolution
+   - Affects: Service type resolution, repository instance tracking, message type flow
+   - Impact: Cannot resolve exact implementation types from interface references
+   - Workaround: Uses symbol-based type analysis (less precise but functional)
+
+2. **FlowValueContentFacade** - Value content analysis for constant propagation
+   - Affects: HTTP route extraction, configuration key extraction, query parameter parsing
+   - Impact: Cannot extract string literal values from method arguments
+   - Workaround: Detects patterns but routes/keys are null (marked with TODO comments)
+
+3. **Field/Property Reference Operations** - IFieldReferenceOperation, IPropertyReferenceOperation
+   - Affects: ServiceOperationVisitor field reference tracking
+   - Impact: Service field accesses not tracked (only method invocations)
+   - Workaround: Added data structures but not populated (requires different operation walking)
+
+**Detailed Feature Comparison:**
+
+| Feature | TheProclaimer | Slicito.Proclaimer | Notes |
+|---------|---------------|-------------------|-------|
+| MediatR Send/Publish | ✅ Full | ✅ Full | Complete parity |
+| HTTP Client Detection | ✅ Full | ✅ Basic | Missing route extraction |
+| EF Operations | ✅ Full | ✅ Full | Complete parity |
+| AutoMapper | ✅ Full | ✅ Basic | Missing profile detection |
+| Caching | ✅ Full | ✅ Full | Complete parity |
+| Validation | ✅ Full | ✅ Full | Complete parity |
+| Configuration | ✅ Full | ✅ Basic | Missing key extraction |
+| DI Analysis | ✅ Full | ✅ Basic | Missing factory patterns |
+| Messaging | ✅ Full | ✅ Full | Complete parity |
+| Notifications | ✅ Full | ✅ Full | Complete parity |
+| Domain Events | ✅ Full | ✅ Full | Complete parity |
+| Pipeline Behaviors | ✅ Full | ✅ Full | Complete parity |
+| Service Operations | ✅ Full | ✅ Basic | Missing field references |
+
+**Future Enhancement Path:**
+
+To achieve 100% parity with TheProclaimer:
+1. Add Roslyn.Analyzers.DataFlow package dependency
+2. Implement FlowPointsToFacade wrapper for Slicito
+3. Implement FlowValueContentFacade wrapper for Slicito
+4. Extend operation walking to include field/property references
+5. Add route extraction methods (TryResolveRoute, TryGetStringLiteral)
+6. Add query parameter parsing (ExtractQueryParameters)
+7. Add AutoMapper profile detection
+8. Add DI factory pattern detection
 
 ## Estimation
 

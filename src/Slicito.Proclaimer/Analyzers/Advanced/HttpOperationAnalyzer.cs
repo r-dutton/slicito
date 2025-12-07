@@ -26,6 +26,17 @@ public record HttpClientInvocation(
 /// <summary>
 /// Analyzes IOperation trees to detect HTTP client patterns.
 /// Extends existing HttpClientAnalyzer with route extraction and URL tracking.
+/// Ported from TheProclaimer's HttpOperationVisitor.
+/// 
+/// LIMITATIONS vs TheProclaimer:
+/// - Does not use FlowValueContentFacade for route string literal extraction
+/// - Route resolution is basic (no string interpolation support)
+/// - Query parameter extraction not implemented (requires value content analysis)
+/// - HttpRequestMessage construction tracking not implemented
+/// 
+/// TODO: Add TryResolveRoute() method using value content analysis
+/// TODO: Add ExtractQueryParameters() for URL analysis
+/// TODO: Add HttpRequestMessage pattern detection
 /// </summary>
 public class HttpOperationAnalyzer
 {

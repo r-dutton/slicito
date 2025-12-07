@@ -9,6 +9,14 @@ namespace Slicito.Proclaimer.Analyzers.Advanced;
 
 /// <summary>
 /// Analyzes configuration patterns (IConfiguration, IOptions, appsettings.json).
+/// Ported from TheProclaimer's ProjectAnalyzer.Configuration.cs.
+/// 
+/// LIMITATIONS vs TheProclaimer:
+/// - Does not use FlowValueContentFacade for config key extraction
+/// - Cannot extract string literal configuration keys (requires value content analysis)
+/// 
+/// TODO: Add TryExtractConfigKey() using value content analysis
+/// TODO: Add appsettings.json parsing support
 /// </summary>
 public class ConfigurationAnalyzer
 {
@@ -93,6 +101,11 @@ public record ConfigurationAccess(ElementId MethodId, ElementId OperationId, str
 
 /// <summary>
 /// Analyzes dependency injection registration patterns.
+/// Ported from TheProclaimer's ProjectAnalyzer.DependencyInjection.cs.
+/// 
+/// LIMITATIONS vs TheProclaimer:
+/// - Factory registration patterns not fully implemented
+/// - Service resolution tracking not implemented
 /// </summary>
 public class DependencyInjectionAnalyzer
 {
@@ -192,6 +205,11 @@ public record ServiceRegistration(ElementId MethodId, ElementId OperationId, str
 
 /// <summary>
 /// Analyzes messaging patterns (MassTransit, Azure Service Bus, RabbitMQ).
+/// Ported from TheProclaimer's MessagingOperationVisitor.
+/// 
+/// LIMITATIONS vs TheProclaimer:
+/// - Does not use FlowPointsToFacade for message type resolution
+/// - Consumer/handler linking not implemented
 /// </summary>
 public class MessagingAnalyzer
 {

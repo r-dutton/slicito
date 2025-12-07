@@ -7,6 +7,14 @@ using Slicito.DotNet;
 
 namespace Slicito.Proclaimer.Analyzers.Advanced;
 
+/// <summary>
+/// Analyzes domain event publication and dispatcher usage patterns.
+/// Ported from TheProclaimer's DomainEventsOperationVisitor.
+/// 
+/// LIMITATIONS vs TheProclaimer:
+/// - Does not use FlowPointsToFacade for event type resolution
+/// - Simplified event dispatcher detection (pattern-based only)
+/// </summary>
 public record DomainEventsOperationAnalysisResult(
     ImmutableArray<DomainEventPublish> EventPublishes,
     ImmutableArray<DomainEventDispatch> EventDispatches);

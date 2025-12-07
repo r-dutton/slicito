@@ -7,6 +7,14 @@ using Slicito.DotNet;
 
 namespace Slicito.Proclaimer.Analyzers.Advanced;
 
+/// <summary>
+/// Analyzes MediatR pipeline behaviors, pre-processors, and post-processors.
+/// Ported from TheProclaimer's PipelineOperationVisitor.
+/// 
+/// LIMITATIONS vs TheProclaimer:
+/// - Does not track cache/options usage within pipelines (handled by CrossCuttingAnalyzers)
+/// - Simplified pipeline behavior detection (interface-based only)
+/// </summary>
 public record PipelineOperationAnalysisResult(
     ImmutableArray<PipelineBehaviorInvocation> BehaviorInvocations,
     ImmutableArray<RequestPreProcessorInvocation> PreProcessors,

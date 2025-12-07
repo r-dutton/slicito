@@ -7,6 +7,15 @@ using Slicito.DotNet;
 
 namespace Slicito.Proclaimer.Analyzers.Advanced;
 
+/// <summary>
+/// Analyzes notification handler operations including MediatR Send/Publish, mapping, and repository calls.
+/// Ported from TheProclaimer's NotificationOperationVisitor.
+/// 
+/// LIMITATIONS vs TheProclaimer:
+/// - Does not use FlowPointsToFacade for instance resolution
+/// - Does not use FlowValueContentFacade for value tracking
+/// - Simplified repository type detection (no scoped service resolution)
+/// </summary>
 public record NotificationOperationAnalysisResult(
     ImmutableArray<NotificationHandlerRequestInvocation> RequestInvocations,
     ImmutableArray<NotificationHandlerPublish> PublishedNotifications,

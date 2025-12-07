@@ -208,6 +208,31 @@ The operation analyzers work at the Roslyn IOperation level, walking the operati
 3. **Impact Analysis**: Understand dependencies and relationships
 4. **Visualization**: See patterns in the interactive graph
 
+### Implementation Limitations
+
+While all 10 TheProclaimer operation visitors have been ported, some advanced features are not available due to Slicito's infrastructure:
+
+**Missing Infrastructure (requires Roslyn.Analyzers.DataFlow package):**
+- `FlowPointsToFacade` - Points-to analysis for precise type resolution
+- `FlowValueContentFacade` - Value content analysis for string literal extraction
+
+**Feature Limitations:**
+- **Route extraction**: Cannot extract HTTP routes from string interpolation or builder patterns
+- **Config keys**: Cannot extract configuration keys from string literals
+- **Query parameters**: HTTP query parameter parsing not implemented
+- **Field references**: Service field/property reference tracking is basic (no points-to analysis)
+- **Service resolution**: Scoped service resolution not implemented (no DI container analysis)
+- **Mapping profiles**: AutoMapper profile detection not implemented
+
+**What Works:**
+- ✅ All pattern detection (MediatR, HTTP, EF, Mapping, Messaging, etc.)
+- ✅ Type-based analysis and symbol resolution
+- ✅ Method invocation tracking
+- ✅ Framework-specific pattern recognition
+- ✅ Line number tracking for all operations
+
+See individual analyzer files for detailed TODO comments on missing features.
+
 ### Example
 
 ```csharp
