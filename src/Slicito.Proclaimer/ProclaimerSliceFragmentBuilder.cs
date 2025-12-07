@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Slicito.Abstractions;
 using Slicito.DotNet;
+using Slicito.Proclaimer.Analyzers;
 
 namespace Slicito.Proclaimer;
 
@@ -34,13 +35,61 @@ public class ProclaimerSliceFragmentBuilder
     public async Task<IProclaimerSliceFragment> BuildAsync()
     {
         var endpointElements = await DiscoverEndpointsAsync();
+        var cqrsTypes = await DiscoverCqrsTypesAsync();
+        var efTypes = await DiscoverEntityFrameworkTypesAsync();
+        var repositories = await DiscoverRepositoriesAsync();
+        var backgroundServices = await DiscoverBackgroundServicesAsync();
         
         // Build the slice with discovered elements
-        var slice = _sliceManager.CreateBuilder()
+        var builder = _sliceManager.CreateBuilder()
+            // Endpoints
             .AddRootElements(_proclaimerTypes.EndpointController, () => LoadEndpoints(endpointElements))
             .AddElementAttribute(_proclaimerTypes.EndpointController, ProclaimerAttributeNames.Verb, LoadEndpointVerb(endpointElements))
-            .AddElementAttribute(_proclaimerTypes.EndpointController, ProclaimerAttributeNames.Route, LoadEndpointRoute(endpointElements))
-            .Build();
+            .AddElementAttribute(_proclaimerTypes.EndpointController, ProclaimerAttributeNames.Route, LoadEndpointRoute(endpointElements));
+        
+        // CQRS Requests
+        if (cqrsTypes.Requests.Length > 0)
+        {
+            builder.AddRootElements(_proclaimerTypes.CqrsRequest, () => LoadCqrsRequests(cqrsTypes.Requests));
+        }
+        
+        // CQRS Handlers
+        if (cqrsTypes.Handlers.Length > 0)
+        {
+            builder.AddRootElements(_proclaimerTypes.CqrsHandler, () => LoadCqrsHandlers(cqrsTypes.Handlers));
+        }
+        
+        // Notifications
+        if (cqrsTypes.Notifications.Length > 0)
+        {
+            builder.AddRootElements(_proclaimerTypes.MessageContract, () => LoadNotifications(cqrsTypes.Notifications));
+        }
+        
+        // Notification Handlers
+        if (cqrsTypes.NotificationHandlers.Length > 0)
+        {
+            builder.AddRootElements(_proclaimerTypes.NotificationHandler, () => LoadNotificationHandlers(cqrsTypes.NotificationHandlers));
+        }
+        
+        // EF DbContexts
+        if (efTypes.DbContexts.Length > 0)
+        {
+            builder.AddRootElements(_proclaimerTypes.EfDbContext, () => LoadDbContexts(efTypes.DbContexts));
+        }
+        
+        // Repositories
+        if (repositories.Length > 0)
+        {
+            builder.AddRootElements(_proclaimerTypes.Repository, () => LoadRepositories(repositories));
+        }
+        
+        // Background Services
+        if (backgroundServices.Length > 0)
+        {
+            builder.AddRootElements(_proclaimerTypes.BackgroundService, () => LoadBackgroundServices(backgroundServices));
+        }
+        
+        var slice = builder.Build();
         
         return new ProclaimerSliceFragment(slice, _proclaimerTypes);
     }
@@ -176,6 +225,186 @@ public class ProclaimerSliceFragmentBuilder
             return new ValueTask<string>(value);
         };
     }
+    
+    // CQRS Discovery
+    private async Task<CqrsTypesInfo> DiscoverCqrsTypesAsync()
+    {
+        var requests = ImmutableArray.CreateBuilder<TypeElementInfo>();
+        var handlers = ImmutableArray.CreateBuilder<TypeElementInfo>();
+        var notifications = ImmutableArray.CreateBuilder<TypeElementInfo>();
+        var notificationHandlers = ImmutableArray.CreateBuilder<TypeElementInfo>();
+        
+        var types = await GetAllTypesAsync();
+        
+        foreach (var type in types)
+        {
+            if (CqrsAnalyzer.IsRequest(type.Symbol))
+            {
+                requests.Add(type);
+            }
+            else if (CqrsAnalyzer.IsRequestHandler(type.Symbol))
+            {
+                handlers.Add(type);
+            }
+            else if (CqrsAnalyzer.IsNotification(type.Symbol))
+            {
+                notifications.Add(type);
+            }
+            else if (CqrsAnalyzer.IsNotificationHandler(type.Symbol))
+            {
+                notificationHandlers.Add(type);
+            }
+        }
+        
+        return new CqrsTypesInfo(
+            requests.ToImmutable(),
+            handlers.ToImmutable(),
+            notifications.ToImmutable(),
+            notificationHandlers.ToImmutable());
+    }
+    
+    private async Task<EntityFrameworkTypesInfo> DiscoverEntityFrameworkTypesAsync()
+    {
+        var dbContexts = ImmutableArray.CreateBuilder<TypeElementInfo>();
+        var types = await GetAllTypesAsync();
+        
+        foreach (var type in types)
+        {
+            if (EntityFrameworkAnalyzer.IsDbContext(type.Symbol))
+            {
+                dbContexts.Add(type);
+            }
+        }
+        
+        return new EntityFrameworkTypesInfo(dbContexts.ToImmutable());
+    }
+    
+    private async Task<ImmutableArray<TypeElementInfo>> DiscoverRepositoriesAsync()
+    {
+        var repositories = ImmutableArray.CreateBuilder<TypeElementInfo>();
+        var types = await GetAllTypesAsync();
+        
+        foreach (var type in types)
+        {
+            if (RepositoryAnalyzer.IsRepository(type.Symbol))
+            {
+                repositories.Add(type);
+            }
+        }
+        
+        return repositories.ToImmutable();
+    }
+    
+    private async Task<ImmutableArray<TypeElementInfo>> DiscoverBackgroundServicesAsync()
+    {
+        var services = ImmutableArray.CreateBuilder<TypeElementInfo>();
+        var types = await GetAllTypesAsync();
+        
+        foreach (var type in types)
+        {
+            if (BackgroundServiceAnalyzer.IsHostedService(type.Symbol))
+            {
+                services.Add(type);
+            }
+        }
+        
+        return services.ToImmutable();
+    }
+    
+    private async Task<ImmutableArray<TypeElementInfo>> GetAllTypesAsync()
+    {
+        var types = ImmutableArray.CreateBuilder<TypeElementInfo>();
+        
+        // Get all type elements from the DotNet slice
+        var typeElements = await _dotnetContext.Slice.GetRootElementsAsync(_dotnetTypes.Type);
+        
+        foreach (var typeElement in typeElements)
+        {
+            var symbol = _dotnetContext.GetSymbol(typeElement.Id);
+            if (symbol is INamedTypeSymbol namedType)
+            {
+                types.Add(new TypeElementInfo(typeElement.Id, namedType));
+            }
+        }
+        
+        return types.ToImmutable();
+    }
+    
+    // CQRS Loaders
+    private ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>> LoadCqrsRequests(
+        ImmutableArray<TypeElementInfo> requests)
+    {
+        var result = requests
+            .Select(r => new ISliceBuilder.PartialElementInfo(r.ElementId, _proclaimerTypes.CqrsRequest))
+            .ToArray();
+        return new ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>>(result);
+    }
+    
+    private ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>> LoadCqrsHandlers(
+        ImmutableArray<TypeElementInfo> handlers)
+    {
+        var result = handlers
+            .Select(h => new ISliceBuilder.PartialElementInfo(h.ElementId, _proclaimerTypes.CqrsHandler))
+            .ToArray();
+        return new ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>>(result);
+    }
+    
+    private ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>> LoadNotifications(
+        ImmutableArray<TypeElementInfo> notifications)
+    {
+        var result = notifications
+            .Select(n => new ISliceBuilder.PartialElementInfo(n.ElementId, _proclaimerTypes.MessageContract))
+            .ToArray();
+        return new ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>>(result);
+    }
+    
+    private ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>> LoadNotificationHandlers(
+        ImmutableArray<TypeElementInfo> handlers)
+    {
+        var result = handlers
+            .Select(h => new ISliceBuilder.PartialElementInfo(h.ElementId, _proclaimerTypes.NotificationHandler))
+            .ToArray();
+        return new ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>>(result);
+    }
+    
+    // EF Loaders
+    private ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>> LoadDbContexts(
+        ImmutableArray<TypeElementInfo> dbContexts)
+    {
+        var result = dbContexts
+            .Select(db => new ISliceBuilder.PartialElementInfo(db.ElementId, _proclaimerTypes.EfDbContext))
+            .ToArray();
+        return new ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>>(result);
+    }
+    
+    // Repository Loaders
+    private ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>> LoadRepositories(
+        ImmutableArray<TypeElementInfo> repositories)
+    {
+        var result = repositories
+            .Select(r => new ISliceBuilder.PartialElementInfo(r.ElementId, _proclaimerTypes.Repository))
+            .ToArray();
+        return new ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>>(result);
+    }
+    
+    // Background Service Loaders
+    private ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>> LoadBackgroundServices(
+        ImmutableArray<TypeElementInfo> services)
+    {
+        var result = services
+            .Select(s => new ISliceBuilder.PartialElementInfo(s.ElementId, _proclaimerTypes.BackgroundService))
+            .ToArray();
+        return new ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>>(result);
+    }
+    
+    // Supporting types
+    private record TypeElementInfo(ElementId ElementId, INamedTypeSymbol Symbol);
+    private record CqrsTypesInfo(
+        ImmutableArray<TypeElementInfo> Requests,
+        ImmutableArray<TypeElementInfo> Handlers,
+        ImmutableArray<TypeElementInfo> Notifications,
+        ImmutableArray<TypeElementInfo> NotificationHandlers);
+    private record EntityFrameworkTypesInfo(ImmutableArray<TypeElementInfo> DbContexts);
     
     private record EndpointInfo(ElementId EndpointId, ElementId MethodId, string HttpMethod, string Route);
 }
