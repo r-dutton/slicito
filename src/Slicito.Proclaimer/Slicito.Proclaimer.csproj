@@ -9,6 +9,18 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.CodeAnalysis.NetAnalyzers">
+      <HintPath>$(NuGetPackageRoot)microsoft.codeanalysis.netanalyzers/8.0.0/analyzers/dotnet/cs/Microsoft.CodeAnalysis.NetAnalyzers.dll</HintPath>
+    </Reference>
+    <Reference Include="Analyzer.Utilities">
+      <HintPath>$(NuGetPackageRoot)microsoft.codeanalysis.netanalyzers/8.0.0/analyzers/dotnet/cs/Analyzer.Utilities.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>

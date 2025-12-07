@@ -28,6 +28,7 @@
     <PackageVersion Include="Microsoft.CodeAnalysis" Version="$(RoslynVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="$(RoslynVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="$(RoslynVersion)" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="8.0.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="$(RoslynVersion)" />
     <PackageVersion Include="Microsoft.DotNet.Interactive" Version="1.0.0-beta.22606.2" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
