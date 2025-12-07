@@ -79,3 +79,15 @@ Contact me
 ----------
 
 If you have any questions, ideas or concerns, [e-mail me](mailto:robert@husak.cloud), [create an issue](https://github.com/roberthusak/slicito/issues/new/choose) or [start a discussion](https://github.com/roberthusak/slicito/discussions/new).
+New: Slicito.Proclaimer
+-----------------------
+
+**Slicito.Proclaimer** is a native extension for service architecture analysis and flow visualization. It discovers ASP.NET endpoints, traces execution flows, and provides interactive graph visualization in Visual Studio.
+
+Key features:
+- Automatic endpoint discovery from ASP.NET Core controllers
+- Flow analysis through calls, HTTP requests, messaging, and data access
+- Visual Studio integration with click-to-navigate support
+- 30+ element types and 27 link types for comprehensive service modeling
+
+See [`src/Slicito.Proclaimer/README.md`](src/Slicito.Proclaimer/README.md) for detailed documentation.
