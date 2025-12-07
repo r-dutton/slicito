@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Slicito.Abstractions;
 using Slicito.DotNet;
 using Slicito.Proclaimer.Analyzers;
+using Slicito.Proclaimer.Analyzers.Advanced;
 
 namespace Slicito.Proclaimer;
 
@@ -40,6 +41,10 @@ public class ProclaimerSliceFragmentBuilder
         var repositories = await DiscoverRepositoriesAsync();
         var backgroundServices = await DiscoverBackgroundServicesAsync();
         var httpClientUsages = await DiscoverHttpClientUsagesAsync();
+        
+        // Run comprehensive operation analysis
+        var comprehensiveAnalyzer = new ComprehensiveOperationAnalyzer(_dotnetContext, _dotnetTypes);
+        var operationResults = await comprehensiveAnalyzer.AnalyzeAllMethodsAsync();
         
         // Build the slice with discovered elements
         var builder = _sliceManager.CreateBuilder()
@@ -110,6 +115,9 @@ public class ProclaimerSliceFragmentBuilder
                 _proclaimerTypes.HttpClient,  // Target is HTTP client
                 sourceId => LoadSendsRequestLinks(httpClientUsages, sourceId));
         }
+        
+        // Add operation analysis results (MediatR, EF, Mapping, etc.)
+        AddOperationAnalysisResults(builder, operationResults);
         
         var slice = builder.Build();
         
@@ -492,6 +500,147 @@ public class ProclaimerSliceFragmentBuilder
             .ToArray();
         
         return new ValueTask<IEnumerable<ISliceBuilder.PartialLinkInfo>>(methodUsages);
+    }
+    
+    // Operation analysis integration methods
+    private void AddOperationAnalysisResults(
+        ISliceBuilder builder,
+        ComprehensiveAnalysisResult operationResults)
+    {
+        // Add MediatR Send operations as MediatrSend elements
+        var allSends = operationResults.CqrsResults.SelectMany(r => r.Sends).ToImmutableArray();
+        if (allSends.Length > 0)
+        {
+            builder.AddRootElements(_proclaimerTypes.MediatrSend, () => LoadMediatrSends(allSends));
+            // Add links from method to MediatrSend
+            builder.AddLinks(
+                _proclaimerTypes.Calls,
+                _dotnetTypes.Method,
+                _proclaimerTypes.MediatrSend,
+                sourceId => LoadMediatrSendLinks(allSends, sourceId));
+        }
+        
+        // Add MediatR Publish operations as MediatrPublish elements
+        var allPublishes = operationResults.CqrsResults.SelectMany(r => r.Publishes).ToImmutableArray();
+        if (allPublishes.Length > 0)
+        {
+            builder.AddRootElements(_proclaimerTypes.MediatrPublish, () => LoadMediatrPublishes(allPublishes));
+            builder.AddLinks(
+                _proclaimerTypes.Calls,
+                _dotnetTypes.Method,
+                _proclaimerTypes.MediatrPublish,
+                sourceId => LoadMediatrPublishLinks(allPublishes, sourceId));
+        }
+        
+        // Add EF operations - link methods to entities
+        var allEfOps = operationResults.EfResults.SelectMany(r => r.Operations).ToImmutableArray();
+        if (allEfOps.Length > 0)
+        {
+            // Link methods that use EF to the entities they manipulate
+            builder.AddLinks(
+                _proclaimerTypes.UsesStorage,
+                _dotnetTypes.Method,
+                _proclaimerTypes.EfEntity,
+                sourceId => LoadEfOperationLinks(allEfOps, sourceId));
+        }
+        
+        // Add mapping operations
+        var allMappings = operationResults.MappingResults.SelectMany(r => r.Mappings).ToImmutableArray();
+        if (allMappings.Length > 0)
+        {
+            builder.AddLinks(
+                _proclaimerTypes.MapsTo,
+                _dotnetTypes.Type,  // Source type
+                _dotnetTypes.Type,  // Dest type
+                sourceId => LoadMappingLinks(allMappings, sourceId));
+        }
+    }
+    
+    private ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>> LoadMediatrSends(
+        ImmutableArray<MediatorSendInvocation> sends)
+    {
+        var result = sends
+            .Select(s => new ISliceBuilder.PartialElementInfo(
+                new ElementId($"{s.OperationId.Value}:mediatr-send"),
+                _proclaimerTypes.MediatrSend))
+            .ToArray();
+        return new ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>>(result);
+    }
+    
+    private ValueTask<IEnumerable<ISliceBuilder.PartialLinkInfo>> LoadMediatrSendLinks(
+        ImmutableArray<MediatorSendInvocation> sends,
+        ElementId sourceId)
+    {
+        var targets = sends
+            .Where(s => s.MethodId == sourceId)
+            .Select(s => new ISliceBuilder.PartialLinkInfo(
+                new ISliceBuilder.PartialElementInfo(
+                    new ElementId($"{s.OperationId.Value}:mediatr-send"),
+                    _proclaimerTypes.MediatrSend)))
+            .ToArray();
+        return new ValueTask<IEnumerable<ISliceBuilder.PartialLinkInfo>>(targets);
+    }
+    
+    private ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>> LoadMediatrPublishes(
+        ImmutableArray<MediatorPublishInvocation> publishes)
+    {
+        var result = publishes
+            .Select(p => new ISliceBuilder.PartialElementInfo(
+                new ElementId($"{p.OperationId.Value}:mediatr-publish"),
+                _proclaimerTypes.MediatrPublish))
+            .ToArray();
+        return new ValueTask<IEnumerable<ISliceBuilder.PartialElementInfo>>(result);
+    }
+    
+    private ValueTask<IEnumerable<ISliceBuilder.PartialLinkInfo>> LoadMediatrPublishLinks(
+        ImmutableArray<MediatorPublishInvocation> publishes,
+        ElementId sourceId)
+    {
+        var targets = publishes
+            .Where(p => p.MethodId == sourceId)
+            .Select(p => new ISliceBuilder.PartialLinkInfo(
+                new ISliceBuilder.PartialElementInfo(
+                    new ElementId($"{p.OperationId.Value}:mediatr-publish"),
+                    _proclaimerTypes.MediatrPublish)))
+            .ToArray();
+        return new ValueTask<IEnumerable<ISliceBuilder.PartialLinkInfo>>(targets);
+    }
+    
+    private ValueTask<IEnumerable<ISliceBuilder.PartialLinkInfo>> LoadEfOperationLinks(
+        ImmutableArray<EfOperationInvocation> efOps,
+        ElementId sourceId)
+    {
+        var targets = efOps
+            .Where(op => op.MethodId == sourceId && op.EntityType != null)
+            .Select(op => new ISliceBuilder.PartialLinkInfo(
+                new ISliceBuilder.PartialElementInfo(
+                    GetTypeElementId(op.EntityType!),
+                    _proclaimerTypes.EfEntity)))
+            .Distinct()
+            .ToArray();
+        return new ValueTask<IEnumerable<ISliceBuilder.PartialLinkInfo>>(targets);
+    }
+    
+    private ValueTask<IEnumerable<ISliceBuilder.PartialLinkInfo>> LoadMappingLinks(
+        ImmutableArray<MappingInvocation> mappings,
+        ElementId sourceId)
+    {
+        var targets = mappings
+            .Where(m => GetTypeElementId(m.SourceType) == sourceId)
+            .Select(m => new ISliceBuilder.PartialLinkInfo(
+                new ISliceBuilder.PartialElementInfo(
+                    GetTypeElementId(m.DestinationType),
+                    _dotnetTypes.Type)))
+            .Distinct()
+            .ToArray();
+        return new ValueTask<IEnumerable<ISliceBuilder.PartialLinkInfo>>(targets);
+    }
+    
+    private ElementId GetTypeElementId(ITypeSymbol type)
+    {
+        // Use the type's full metadata name to create a stable element ID
+        var metadataName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        return new ElementId($"type:{metadataName}");
     }
     
     // Supporting types
