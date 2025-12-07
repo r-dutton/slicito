@@ -1,0 +1,249 @@
+using System.Collections.Immutable;
+using Microsoft.CodeAnalysis;
+using Slicito.Abstractions;
+using Slicito.Abstractions.Facts;
+using Slicito.Common.Implementation;
+using Slicito.DotNet;
+
+namespace Slicito.Proclaimer.Analyzers.Advanced;
+
+public record ServiceOperationAnalysisResult(
+    ImmutableArray<ServiceUsageInvocation> ServiceUsages,
+    ImmutableArray<OptionsUsageInvocation> OptionsUsages,
+    ImmutableArray<ConfigurationUsageInvocation> ConfigurationUsages,
+    ImmutableArray<ValidationCallInvocation> ValidationCalls,
+    ImmutableArray<LogInvocation> LogInvocations);
+
+public record ServiceUsageInvocation(
+    ElementId MethodId,
+    ElementId OperationId,
+    string ServiceType,
+    string InvocationMethod,
+    int LineNumber);
+
+public record OptionsUsageInvocation(
+    ElementId MethodId,
+    ElementId OperationId,
+    ITypeSymbol OptionsType,
+    int LineNumber);
+
+public record ConfigurationUsageInvocation(
+    ElementId MethodId,
+    ElementId OperationId,
+    string? ConfigKey,
+    int LineNumber);
+
+public record ValidationCallInvocation(
+    ElementId MethodId,
+    ElementId OperationId,
+    string ValidatorType,
+    string ValidationMethod,
+    int LineNumber);
+
+public record LogInvocation(
+    ElementId MethodId,
+    ElementId OperationId,
+    string LogLevel,
+    int LineNumber);
+
+public class ServiceOperationAnalyzer
+{
+    private readonly DotNetSolutionContext _dotnetContext;
+    private readonly DotNetTypes _dotnetTypes;
+
+    public ServiceOperationAnalyzer(DotNetSolutionContext dotnetContext, DotNetTypes dotnetTypes)
+    {
+        _dotnetContext = dotnetContext;
+        _dotnetTypes = dotnetTypes;
+    }
+
+    public async Task<ServiceOperationAnalysisResult> AnalyzeMethodAsync(ElementId methodId)
+    {
+        var serviceUsages = ImmutableArray.CreateBuilder<ServiceUsageInvocation>();
+        var optionsUsages = ImmutableArray.CreateBuilder<OptionsUsageInvocation>();
+        var configUsages = ImmutableArray.CreateBuilder<ConfigurationUsageInvocation>();
+        var validationCalls = ImmutableArray.CreateBuilder<ValidationCallInvocation>();
+        var logInvocations = ImmutableArray.CreateBuilder<LogInvocation>();
+
+        var procedureElement = new SimpleProcedureElement(methodId);
+        var operations = await _dotnetContext.TypedSliceFragment.GetOperationsAsync(procedureElement);
+
+        foreach (var operation in operations)
+        {
+            var operationType = _dotnetContext.Slice.GetElementType(operation.Id);
+            if (!operationType.Value.IsSubsetOfOrEquals(_dotnetTypes.Call.Value))
+                continue;
+
+            var symbol = _dotnetContext.GetSymbol(operation.Id);
+            if (symbol is not IMethodSymbol methodSymbol)
+                continue;
+
+            var receiver = methodSymbol.ReceiverType ?? methodSymbol.ContainingType;
+            var lineNumber = GetLineNumber(operation.Id);
+
+            if (IsValidatorCall(methodSymbol))
+            {
+                var validatorType = receiver?.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat) ?? "";
+                if (!string.IsNullOrEmpty(validatorType))
+                {
+                    validationCalls.Add(new ValidationCallInvocation(
+                        methodId, operation.Id, validatorType, methodSymbol.Name, lineNumber));
+                }
+            }
+            else if (IsLoggerType(receiver))
+            {
+                var logLevel = ExtractLogLevel(methodSymbol.Name);
+                if (logLevel is not null)
+                {
+                    logInvocations.Add(new LogInvocation(
+                        methodId, operation.Id, logLevel, lineNumber));
+                }
+            }
+            else if (IsCacheService(receiver))
+            {
+                // Cache operations handled by CrossCuttingAnalyzers
+            }
+            else if (TryResolveOptionsType(receiver, out var optionsType))
+            {
+                optionsUsages.Add(new OptionsUsageInvocation(
+                        methodId, operation.Id, optionsType, lineNumber));
+            }
+            else if (IsConfigurationAccess(methodSymbol))
+            {
+                var configKey = ExtractConfigurationKey(methodSymbol);
+                configUsages.Add(new ConfigurationUsageInvocation(
+                    methodId, operation.Id, configKey, lineNumber));
+            }
+            else if (IsServiceInvocation(methodSymbol, receiver))
+            {
+                var serviceType = receiver?.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat) ?? "";
+                if (!string.IsNullOrEmpty(serviceType))
+                {
+                    serviceUsages.Add(new ServiceUsageInvocation(
+                        methodId, operation.Id, serviceType, methodSymbol.Name, lineNumber));
+                }
+            }
+        }
+
+        return new ServiceOperationAnalysisResult(
+            serviceUsages.ToImmutable(),
+            optionsUsages.ToImmutable(),
+            configUsages.ToImmutable(),
+            validationCalls.ToImmutable(),
+            logInvocations.ToImmutable());
+    }
+
+    private bool IsValidatorCall(IMethodSymbol method)
+    {
+        return method.Name == "Validate" || method.Name == "ValidateAsync" ||
+               method.ContainingType?.Name.Contains("Validator", StringComparison.OrdinalIgnoreCase) == true;
+    }
+
+    private bool IsLoggerType(ITypeSymbol? type)
+    {
+        var typeName = type?.Name ?? "";
+        return typeName.Contains("ILogger", StringComparison.Ordinal) ||
+               typeName.Contains("Logger", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string? ExtractLogLevel(string methodName)
+    {
+        if (methodName.Contains("Debug", StringComparison.OrdinalIgnoreCase)) return "Debug";
+        if (methodName.Contains("Info", StringComparison.OrdinalIgnoreCase)) return "Information";
+        if (methodName.Contains("Warn", StringComparison.OrdinalIgnoreCase)) return "Warning";
+        if (methodName.Contains("Error", StringComparison.OrdinalIgnoreCase)) return "Error";
+        if (methodName.Contains("Critical", StringComparison.OrdinalIgnoreCase) ||
+            methodName.Contains("Fatal", StringComparison.OrdinalIgnoreCase)) return "Critical";
+        if (methodName.Contains("Trace", StringComparison.OrdinalIgnoreCase)) return "Trace";
+        
+        return null;
+    }
+
+    private bool IsCacheService(ITypeSymbol? type)
+    {
+        var display = type?.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat) ?? "";
+        return display.Contains("IMemoryCache", StringComparison.Ordinal) ||
+               display.Contains("IDistributedCache", StringComparison.Ordinal);
+    }
+
+    private bool TryResolveOptionsType(ITypeSymbol? type, out ITypeSymbol optionsType)
+    {
+        optionsType = default!;
+        
+        if (type is not INamedTypeSymbol namedType)
+            return false;
+
+        var display = namedType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
+        if (!display.Contains("IOptions", StringComparison.Ordinal))
+            return false;
+
+        if (namedType.TypeArguments.Length > 0)
+        {
+            optionsType = namedType.TypeArguments[0];
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool IsConfigurationAccess(IMethodSymbol method)
+    {
+        var receiver = method.ReceiverType ?? method.ContainingType;
+        var display = receiver?.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat) ?? "";
+        
+        return display.Contains("IConfiguration", StringComparison.Ordinal) ||
+               (method.IsIndexer && display.Contains("Configuration", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private string? ExtractConfigurationKey(IMethodSymbol method)
+    {
+        // This would require value content analysis to extract string constants
+        // For now, return null as we don't have that infrastructure in Slicito
+        return null;
+    }
+
+    private bool IsServiceInvocation(IMethodSymbol method, ITypeSymbol? receiver)
+    {
+        if (receiver is null)
+            return false;
+
+        // Consider it a service if it's not a framework type and not a primitive
+        var display = receiver.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
+        
+        // Exclude framework types
+        if (display.StartsWith("System.", StringComparison.Ordinal) ||
+            display.StartsWith("Microsoft.", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        // Exclude primitives and common types
+        if (receiver.TypeKind == TypeKind.Enum ||
+            receiver.SpecialType != SpecialType.None)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private int GetLineNumber(ElementId operationId)
+    {
+        var symbol = _dotnetContext.GetSymbol(operationId);
+        if (symbol?.Locations.FirstOrDefault() is { } location && location.IsInSource)
+        {
+            return location.GetLineSpan().StartLinePosition.Line + 1;
+        }
+        return 0;
+    }
+
+    private class SimpleProcedureElement : ElementBase, Slicito.DotNet.Facts.ICSharpProcedureElement
+    {
+        public SimpleProcedureElement(ElementId id) : base(id)
+        {
+        }
+
+        public string Runtime => Slicito.DotNet.DotNetAttributeValues.Runtime.DotNet;
+        public string Language => Slicito.DotNet.DotNetAttributeValues.Language.CSharp;
+    }
+}
