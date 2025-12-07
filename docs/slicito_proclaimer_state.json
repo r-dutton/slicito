@@ -1,0 +1,295 @@
+{
+  "currentPhase": 0,
+  "phases": [
+    {
+      "id": 0,
+      "name": "Recon & design",
+      "status": "in_progress",
+      "tasks": [
+        {
+          "id": 1,
+          "title": "Discover existing Slicito projects and structure",
+          "status": "done",
+          "notes": "Explored Slicito.Abstractions, Slicito.DotNet, Slicito.ProgramAnalysis, Slicito.VisualStudio"
+        },
+        {
+          "id": 2,
+          "title": "Clone and analyze TheProclaimer repository",
+          "status": "done",
+          "notes": "Cloned from https://github.com/r-dutton/TheProclaimer, analyzed GraphKit architecture"
+        },
+        {
+          "id": 3,
+          "title": "Map Proclaimer requirements to Slicito architecture",
+          "status": "done",
+          "notes": "Mapped GraphKit NodeTypes/EdgeKinds to Slicito ElementType/LinkType"
+        },
+        {
+          "id": 4,
+          "title": "Create SlicitoProclaimerDesign.md",
+          "status": "done"
+        },
+        {
+          "id": 5,
+          "title": "Initialize state files",
+          "status": "done"
+        },
+        {
+          "id": 6,
+          "title": "Verify build system and test infrastructure",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "Create Slicito.Proclaimer project & schema",
+      "status": "pending",
+      "tasks": [
+        {
+          "id": 1,
+          "title": "Create Slicito.Proclaimer project",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Add project references",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Implement ProclaimerAttributeNames",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Implement ProclaimerAttributeValues",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Implement ProclaimerTypes",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Implement ProclaimerSchema",
+          "status": "pending"
+        },
+        {
+          "id": 7,
+          "title": "Add to solution file",
+          "status": "pending"
+        },
+        {
+          "id": 8,
+          "title": "Add minimal schema tests",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Slice fragment (services + endpoints + HttpClients)",
+      "status": "pending",
+      "tasks": [
+        {
+          "id": 1,
+          "title": "Define IProclaimerSliceFragment interface",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Implement service discovery from projects",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Implement endpoint discovery using Slicito.DotNet.AspNetCore",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Implement HttpClient detection",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Create BelongsToService links",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Create SendsHttpRequest links",
+          "status": "pending"
+        },
+        {
+          "id": 7,
+          "title": "Add validation tests",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Flow analysis (first cut)",
+      "status": "pending",
+      "tasks": [
+        {
+          "id": 1,
+          "title": "Define FlowNode model",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Implement ProclaimerFlowService",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Implement BFS/DFS traversal over links",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Add logging",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Add flow service tests",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Labels & view builders",
+      "status": "pending",
+      "tasks": [
+        {
+          "id": 1,
+          "title": "Implement ProclaimerLabelProvider",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Implement ProclaimerFlowGraphBuilder",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Optionally implement ProclaimerFlowTreeBuilder",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Add tests for label generation",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Add tests for graph building",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "VS integration",
+      "status": "pending",
+      "tasks": [
+        {
+          "id": 1,
+          "title": "Implement ProclaimerFlowGraphController",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Wire up slice building with Proclaimer fragment",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Implement endpoint selection heuristic",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Implement navigation commands",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Optionally implement ProclaimerFlowTreeController",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Test in Visual Studio",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Port advanced Proclaimer semantics",
+      "status": "pending",
+      "tasks": [
+        {
+          "id": 1,
+          "title": "Add repository/DB detection",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Add messaging flow detection",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Add background service detection",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Implement flow grouping/deduplication",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Add advanced flow semantics",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Cleanup & migration",
+      "status": "pending",
+      "tasks": [
+        {
+          "id": 1,
+          "title": "Mark legacy Proclaimer code as deprecated",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Add compatibility layer if needed",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Update documentation",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Update README",
+          "status": "pending"
+        }
+      ]
+    }
+  ],
+  "lastUpdated": "2025-12-07T19:35:00.000Z"
+}
