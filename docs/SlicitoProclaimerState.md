@@ -2,101 +2,54 @@
 
 This document tracks progress on integrating TheProclaimer into Slicito as a native extension.
 
-**Last Updated**: 2025-12-07T19:33:00Z  
-**Current Phase**: Phase 0 - Recon & design
+**Last Updated**: 2025-12-07T19:45:00Z  
+**Current Phase**: Phase 1 - Create Slicito.Proclaimer project & schema (Complete!)
 
 ---
 
-## Phase 0 – Recon & design (status: in_progress)
+## Phase 0 – Recon & design (status: done)
 
 ### Tasks
 
 - [x] Discover existing Slicito projects and structure
-  - Explored core projects: Slicito.Abstractions, Slicito.DotNet, Slicito.ProgramAnalysis, Slicito.VisualStudio
-  - Verified build system works (core libs build successfully on Linux)
-  - Examined existing ASP.NET support in Slicito.DotNet.AspNetCore
-  - Reviewed IController pattern and Graph/Tree models
-
 - [x] Clone and analyze TheProclaimer repository
-  - Repository is now public at https://github.com/r-dutton/TheProclaimer
-  - Core library: GraphKit - contains all analysis logic
-  - CLI tool: FlowGrep - command-line interface
-  - Key components identified:
-    - **Node Types**: Controllers, Endpoints, HttpClient, CQRS handlers, EF contexts, Message publishers/subscribers, Background services, etc.
-    - **Edge Kinds**: Calls, SendsRequest, HandledBy, Publishes, Queries, UsesStorage, etc.
-    - **Analyzers**: Project-level analyzers for controllers, HTTP, messaging, repositories, caching, configuration, etc.
-    - **Flow Analysis**: Interprocedural analysis with provenance tracking and confidence scoring
-
 - [x] Map current graph/flow/analyzer components
-  - GraphKit uses custom graph model (GraphNode, GraphEdge) with JSON serialization
-  - FlowAnalysis uses IOperation visitors for interprocedural analysis
-  - Extensive analyzer coverage: controllers, CQRS, messaging, EF, HTTP clients, background services
-  - Edge properties include provenance, confidence, transforms
-
 - [x] Create SlicitoProclaimerDesign.md
-  - Initial design document created with architecture overview
-  - Schema mapping from GraphKit node types to Slicito element types
-  - Component mapping from TheProclaimer to Slicito.Proclaimer
-
 - [x] Initialize state files
-  - Created slicito_proclaimer_state.json with phase/task structure
-  - Creating this SlicitoProclaimerState.md file
-
-- [ ] Update design document with actual TheProclaimer details
-  - Need to refine schema based on actual NodeTypes and EdgeKinds
-  - Document analyzer patterns and how they map to Slicito's program analysis
-
-- [ ] Verify build system and test infrastructure
-  - Check how to add new test projects
-  - Understand test patterns in existing Slicito tests
-
-### Notes
-
-**TheProclaimer Architecture Insights**:
-- Uses IOperation visitors for deep code analysis (similar to Slicito's approach)
-- Tracks provenance (where facts come from) and confidence (how certain we are)
-- Heavy use of interprocedural analysis to follow call chains
-- Specialized analyzers for different patterns (controllers, CQRS, messaging, etc.)
-- Graph model is rich with metadata (props, tags, evidence, transforms)
-
-**Slicito Architecture Insights**:
-- Element/Link model with typed attributes
-- Schema defines element types, link types, and their relationships
-- ITypedSliceFragment for domain-specific views
-- IController for VS integration returning Graph or Tree models
-- Existing DotNet support with AspNetCore endpoint detection
-
-**Key Design Decisions**:
-1. Map GraphKit node types to Slicito ElementType using attribute-based discrimination
-2. Map GraphKit edge kinds to Slicito LinkType similarly
-3. Port analyzer logic into ProclaimerSliceFragmentBuilder
-4. Re-express flow analysis using Slicito's ISlice link queries
-5. Preserve provenance/confidence via element/link attributes
-
-**Open Questions**:
-1. How to handle GraphKit's "transform" concept (method/type transformations in flows)?
-2. Should we support cross-solution analysis from day one or add it later?
-3. How to map GraphKit's tags to Slicito's attribute model?
-4. Performance considerations for large codebases with extensive interprocedural analysis?
+- [x] Verify build system and test infrastructure
 
 ---
 
-## Phase 1 – Create Slicito.Proclaimer project & schema (status: pending)
+## Phase 1 – Create Slicito.Proclaimer project & schema (status: done)
 
 ### Tasks
 
-- [ ] Create Slicito.Proclaimer project
-- [ ] Add project references
-- [ ] Implement ProclaimerAttributeNames
-- [ ] Implement ProclaimerAttributeValues  
-- [ ] Implement ProclaimerTypes
-- [ ] Implement ProclaimerSchema
-- [ ] Add to solution file
-- [ ] Add minimal schema tests
+- [x] Create Slicito.Proclaimer project (netstandard2.0)
+- [x] Add project references (Abstractions, Common, DotNet, ProgramAnalysis)
+- [x] Implement ProclaimerAttributeNames
+- [x] Implement ProclaimerAttributeValues
+- [x] Implement ProclaimerTypes (with all 30+ element types and 27 link types)
+- [x] Implement ProclaimerSchema
+- [x] Add to solution file
+- [x] Add minimal schema tests (7 tests, all passing)
 
 ### Notes
 
-(Notes will be added as we work through this phase)
+**Completed**:
+1. Created `src/Slicito.Proclaimer/` project with proper references
+2. Implemented complete schema mapping from GraphKit to Slicito:
+   - 30+ element types (endpoints, CQRS, data access, messaging, etc.)
+   - 27 link types (calls, sends_request, publishes, etc.)
+   - Attribute names and values matching GraphKit constants
+3. ProclaimerTypes implements IProgramTypes for compatibility
+4. Created test project with comprehensive schema validation
+5. All 7 tests pass successfully
+
+**Key Design Decisions**:
+- Used attribute-based discrimination (Kind attribute) to distinguish element/link types
+- Implemented IProgramTypes for compatibility with Slicito's program analysis infrastructure
+- Set endpoints and background services as root element types
+- Stubbed unused IProgramTypes members (Operation, Call, NestedProcedures) since Proclaimer operates at higher abstraction level
 
 ---
 

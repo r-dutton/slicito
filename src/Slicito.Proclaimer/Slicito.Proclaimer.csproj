@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PolySharp">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Slicito.Abstractions\Slicito.Abstractions.csproj" />
+    <ProjectReference Include="..\Slicito.Common\Slicito.Common.csproj" />
+    <ProjectReference Include="..\Slicito.DotNet\Slicito.DotNet.csproj" />
+    <ProjectReference Include="..\Slicito.ProgramAnalysis\Slicito.ProgramAnalysis.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Slicito.Proclaimer.Tests" />
+  </ItemGroup>
+</Project>
