@@ -122,13 +122,8 @@ public class CqrsOperationAnalyzer
 
     private ITypeSymbol? GetRequestType(IMethodSymbol sendMethod)
     {
-        // For Send<TResponse>(IRequest<TResponse> request), get the request type
-        if (sendMethod.TypeArguments.Length > 0)
-        {
-            return sendMethod.TypeArguments[0]; // This is actually the response type
-        }
-
-        // Try to get from first parameter
+        // For Send<TResponse>(IRequest<TResponse> request), 
+        // we want to get the request type from the first parameter
         if (sendMethod.Parameters.Length > 0)
         {
             var firstParam = sendMethod.Parameters[0];
@@ -136,7 +131,8 @@ public class CqrsOperationAnalyzer
             return firstParam.Type;
         }
 
-        return null;
+        // Fallback: try type arguments (though this would be the response type)
+        return sendMethod.TypeArguments.FirstOrDefault();
     }
 
     private ITypeSymbol? GetNotificationType(IMethodSymbol publishMethod)

@@ -15,15 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.CodeAnalysis.NetAnalyzers">
-      <HintPath>$(NuGetPackageRoot)microsoft.codeanalysis.netanalyzers/8.0.0/analyzers/dotnet/cs/Microsoft.CodeAnalysis.NetAnalyzers.dll</HintPath>
-    </Reference>
-    <Reference Include="Analyzer.Utilities">
-      <HintPath>$(NuGetPackageRoot)microsoft.codeanalysis.netanalyzers/8.0.0/analyzers/dotnet/cs/Analyzer.Utilities.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Slicito.Abstractions\Slicito.Abstractions.csproj" />
     <ProjectReference Include="..\Slicito.Common\Slicito.Common.csproj" />
     <ProjectReference Include="..\Slicito.DotNet\Slicito.DotNet.csproj" />
