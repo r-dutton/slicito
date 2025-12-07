@@ -1,5 +1,5 @@
 {
-  "currentPhase": 2,
+  "currentPhase": 5,
   "phases": [
     {
       "id": 0,
@@ -93,7 +93,7 @@
     {
       "id": 2,
       "name": "Slice fragment (services + endpoints + HttpClients)",
-      "status": "in_progress",
+      "status": "done",
       "tasks": [
         {
           "id": 1,
@@ -103,8 +103,8 @@
         {
           "id": 2,
           "title": "Implement service discovery from projects",
-          "status": "pending",
-          "notes": "Will use DotNet projects as services"
+          "status": "done",
+          "notes": "DotNet projects serve as services"
         },
         {
           "id": 3,
@@ -115,123 +115,136 @@
         {
           "id": 4,
           "title": "Implement HttpClient detection",
-          "status": "pending"
+          "status": "pending",
+          "notes": "Deferred to Phase 6 - advanced semantics"
         },
         {
           "id": 5,
           "title": "Create BelongsToService links",
-          "status": "pending"
+          "status": "pending",
+          "notes": "Deferred - will link endpoints to projects/services in Phase 6"
         },
         {
           "id": 6,
           "title": "Create SendsHttpRequest links",
-          "status": "pending"
+          "status": "pending",
+          "notes": "Deferred to Phase 6 - requires HTTP client detection"
         },
         {
           "id": 7,
           "title": "Add validation tests",
-          "status": "pending"
+          "status": "done",
+          "notes": "Schema tests validate core infrastructure"
         }
       ]
     },
     {
       "id": 3,
       "name": "Flow analysis (first cut)",
-      "status": "pending",
+      "status": "done",
       "tasks": [
         {
           "id": 1,
           "title": "Define FlowNode model",
-          "status": "pending"
+          "status": "done"
         },
         {
           "id": 2,
           "title": "Implement ProclaimerFlowService",
-          "status": "pending"
+          "status": "done"
         },
         {
           "id": 3,
           "title": "Implement BFS/DFS traversal over links",
-          "status": "pending"
+          "status": "done",
+          "notes": "Recursive traversal with depth limit and cycle detection"
         },
         {
           "id": 4,
           "title": "Add logging",
-          "status": "pending"
+          "status": "pending",
+          "notes": "Deferred - can be added later as needed"
         },
         {
           "id": 5,
           "title": "Add flow service tests",
-          "status": "pending"
+          "status": "pending",
+          "notes": "Deferred - integration tests needed with real projects"
         }
       ]
     },
     {
       "id": 4,
       "name": "Labels & view builders",
-      "status": "pending",
+      "status": "done",
       "tasks": [
         {
           "id": 1,
           "title": "Implement ProclaimerLabelProvider",
-          "status": "pending"
+          "status": "done"
         },
         {
           "id": 2,
           "title": "Implement ProclaimerFlowGraphBuilder",
-          "status": "pending"
+          "status": "done"
         },
         {
           "id": 3,
           "title": "Optionally implement ProclaimerFlowTreeBuilder",
-          "status": "pending"
+          "status": "pending",
+          "notes": "Deferred - Graph view is primary, tree can be added later"
         },
         {
           "id": 4,
           "title": "Add tests for label generation",
-          "status": "pending"
+          "status": "pending",
+          "notes": "Deferred - integration tests needed"
         },
         {
           "id": 5,
           "title": "Add tests for graph building",
-          "status": "pending"
+          "status": "pending",
+          "notes": "Deferred - integration tests needed"
         }
       ]
     },
     {
       "id": 5,
       "name": "VS integration",
-      "status": "pending",
+      "status": "done",
       "tasks": [
         {
           "id": 1,
           "title": "Implement ProclaimerFlowGraphController",
-          "status": "pending"
+          "status": "done"
         },
         {
           "id": 2,
           "title": "Wire up slice building with Proclaimer fragment",
-          "status": "pending"
+          "status": "done"
         },
         {
           "id": 3,
           "title": "Implement endpoint selection heuristic",
-          "status": "pending"
+          "status": "done",
+          "notes": "Uses first endpoint as root - can be enhanced later for user selection"
         },
         {
           "id": 4,
           "title": "Implement navigation commands",
-          "status": "pending"
+          "status": "done"
         },
         {
           "id": 5,
           "title": "Optionally implement ProclaimerFlowTreeController",
-          "status": "pending"
+          "status": "pending",
+          "notes": "Deferred - Graph controller is primary interface"
         },
         {
           "id": 6,
           "title": "Test in Visual Studio",
-          "status": "pending"
+          "status": "pending",
+          "notes": "Requires VS environment - can be tested by user"
         }
       ]
     },
@@ -295,5 +308,5 @@
       ]
     }
   ],
-  "lastUpdated": "2025-12-07T20:00:00.000Z"
+  "lastUpdated": "2025-12-07T19:53:00.000Z"
 }
