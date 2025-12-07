@@ -1,5 +1,5 @@
 {
-  "currentPhase": 1,
+  "currentPhase": 2,
   "phases": [
     {
       "id": 0,
@@ -93,22 +93,24 @@
     {
       "id": 2,
       "name": "Slice fragment (services + endpoints + HttpClients)",
-      "status": "pending",
+      "status": "in_progress",
       "tasks": [
         {
           "id": 1,
           "title": "Define IProclaimerSliceFragment interface",
-          "status": "pending"
+          "status": "done"
         },
         {
           "id": 2,
           "title": "Implement service discovery from projects",
-          "status": "pending"
+          "status": "pending",
+          "notes": "Will use DotNet projects as services"
         },
         {
           "id": 3,
           "title": "Implement endpoint discovery using Slicito.DotNet.AspNetCore",
-          "status": "pending"
+          "status": "done",
+          "notes": "Discovers controller endpoints with HTTP method and route attributes"
         },
         {
           "id": 4,
@@ -293,5 +295,5 @@
       ]
     }
   ],
-  "lastUpdated": "2025-12-07T19:45:00.000Z"
+  "lastUpdated": "2025-12-07T20:00:00.000Z"
 }
