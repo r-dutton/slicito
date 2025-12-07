@@ -2,6 +2,8 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 using Slicito.Abstractions;
+using Slicito.Abstractions.Facts;
+using Slicito.Common.Implementation;
 using Slicito.DotNet;
 
 namespace Slicito.Proclaimer.Analyzers.Advanced;
@@ -55,7 +57,6 @@ public class CqrsOperationAnalyzer
         var publishes = ImmutableArray.CreateBuilder<MediatorPublishInvocation>();
 
         // Get operations for this method from DotNet slice
-        var methodElement = await _dotnetContext.Slice.GetElementAsync(methodId);
         var procedureElement = new SimpleProcedureElement(methodId);
         var operations = await _dotnetContext.TypedSliceFragment.GetOperationsAsync(procedureElement);
 
@@ -165,13 +166,13 @@ public class CqrsOperationAnalyzer
         return 0;
     }
 
-    private class SimpleProcedureElement : Slicito.Abstractions.Facts.ICSharpProcedureElement
+    private class SimpleProcedureElement : ElementBase, Slicito.DotNet.Facts.ICSharpProcedureElement
     {
-        public SimpleProcedureElement(ElementId id)
+        public SimpleProcedureElement(ElementId id) : base(id)
         {
-            Id = id;
         }
 
-        public ElementId Id { get; }
+        public string Runtime => Slicito.DotNet.DotNetAttributeValues.Runtime.DotNet;
+        public string Language => Slicito.DotNet.DotNetAttributeValues.Language.CSharp;
     }
 }
