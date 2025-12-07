@@ -179,7 +179,7 @@ Proclaimer discovers:
 - Route: `"/api/users/{id}"`
 - Label: `"GET /api/users/{id}"`
 
-## Advanced Features (Phase 6 - Complete)
+## Advanced Features (Phase 5 - Complete)
 
 Slicito.Proclaimer now includes comprehensive operation analysis that detects patterns across your codebase:
 
@@ -194,6 +194,10 @@ Slicito.Proclaimer now includes comprehensive operation analysis that detects pa
 - **Configuration Access**: Tracks IConfiguration and IOptions usage
 - **Dependency Injection**: Analyzes service registrations (AddScoped, AddTransient, AddSingleton) with lifetime tracking
 - **Messaging Patterns**: Detects MassTransit, Azure Service Bus, and RabbitMQ publish/send operations
+- **Notification Handlers**: Tracks INotificationHandler implementations and their operations (Send, Publish, Mapping, Repository calls)
+- **Domain Events**: Detects domain event publication and dispatcher usage
+- **MediatR Pipeline**: Identifies pipeline behaviors, pre-processors, and post-processors
+- **Service Operations**: Tracks service invocations, options usage, logging, and validation calls
 
 ### How It Works
 
@@ -259,19 +263,21 @@ See the main Slicito documentation for contribution guidelines.
 
 ## Status
 
-**Current**: Phases 0-6 complete
+**Current**: Phase 5 complete
 - ✅ Schema infrastructure (30+ element types, 27 link types)
 - ✅ Endpoint discovery from ASP.NET controllers
 - ✅ Flow analysis with recursive traversal
 - ✅ Label providers and graph builders
 - ✅ Visual Studio controller integration
 - ✅ Advanced operation analyzers (CQRS, HTTP, EF, Mapping, Caching, DI, Configuration, Messaging)
+- ✅ Specialized operation analyzers (Notification handlers, Domain events, Pipeline behaviors, Service operations)
 - ✅ Interprocedural pattern detection across all methods
 
-**Next**: Phase 7
+**Next**: Phase 6+
 - 🚧 Value content analysis for route/configuration key extraction
 - 🚧 String literal collection and propagation
 - 🚧 Authorization attribute parsing
+- 🚧 Full points-to analysis integration
 
 ## License
 
