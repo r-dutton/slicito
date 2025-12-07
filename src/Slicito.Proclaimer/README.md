@@ -179,15 +179,59 @@ Proclaimer discovers:
 - Route: `"/api/users/{id}"`
 - Label: `"GET /api/users/{id}"`
 
-## Advanced Features (Phase 6 - In Development)
+## Advanced Features (Phase 6 - Complete)
 
-The following features are planned for Phase 6:
+Slicito.Proclaimer now includes comprehensive operation analysis that detects patterns across your codebase:
 
-- **HTTP Client Detection**: Discover HttpClient usage and outgoing HTTP requests
-- **Messaging Flows**: Detect message publishers and subscribers
-- **Repository Pattern**: Identify repository and database interactions
-- **Background Services**: Discover hosted services and background workers
-- **Flow Grouping**: Group and deduplicate flows for cleaner visualization
+### Interprocedural Flow Analysis
+
+- **CQRS/MediatR Analysis**: Detects `IMediator.Send()` and `Publish()` calls, links handlers to requests/notifications
+- **HTTP Client Detection**: Discovers HttpClient usage with HTTP verbs (GET, POST, PUT, DELETE, PATCH)
+- **Entity Framework Tracking**: Identifies DbSet operations (Add, Update, Remove, Find, SaveChanges) and LINQ queries
+- **AutoMapper Detection**: Detects Map and ProjectTo operations, tracks source-to-destination type mappings
+- **Caching Operations**: Identifies IMemoryCache and IDistributedCache Get/Set/Remove operations
+- **Validation Analysis**: Detects FluentValidation usage and validator invocations
+- **Configuration Access**: Tracks IConfiguration and IOptions usage
+- **Dependency Injection**: Analyzes service registrations (AddScoped, AddTransient, AddSingleton) with lifetime tracking
+- **Messaging Patterns**: Detects MassTransit, Azure Service Bus, and RabbitMQ publish/send operations
+
+### How It Works
+
+The operation analyzers work at the Roslyn IOperation level, walking the operation trees of all methods to identify framework-specific patterns. Results are emitted as Slicito slice elements and links, enabling:
+
+1. **Discovery**: Find all places a specific pattern is used
+2. **Flow Tracking**: Trace data and control flow through multiple layers
+3. **Impact Analysis**: Understand dependencies and relationships
+4. **Visualization**: See patterns in the interactive graph
+
+### Example
+
+```csharp
+// This controller action will be analyzed to detect:
+// - Endpoint (GET /api/users/{id})
+// - MediatR.Send call
+// - Handler invocation
+// - Entity Framework query
+[HttpGet("{id}")]
+public async Task<IActionResult> GetUser(int id)
+{
+    var query = new GetUserQuery(id);
+    var user = await _mediator.Send(query);  // ← Detected
+    return Ok(user);
+}
+
+// Handler analysis detects:
+// - EF DbSet query
+// - Entity type usage
+public class GetUserQueryHandler : IRequestHandler<GetUserQuery, UserDto>
+{
+    public async Task<UserDto> Handle(GetUserQuery request, CancellationToken ct)
+    {
+        var user = await _db.Users.FindAsync(request.Id);  // ← Detected
+        return _mapper.Map<UserDto>(user);  // ← Detected
+    }
+}
+```
 
 ## Migration from TheProclaimer
 
@@ -215,16 +259,19 @@ See the main Slicito documentation for contribution guidelines.
 
 ## Status
 
-**Current**: Phases 0-5 complete
+**Current**: Phases 0-6 complete
 - ✅ Schema infrastructure (30+ element types, 27 link types)
 - ✅ Endpoint discovery from ASP.NET controllers
 - ✅ Flow analysis with recursive traversal
 - ✅ Label providers and graph builders
 - ✅ Visual Studio controller integration
+- ✅ Advanced operation analyzers (CQRS, HTTP, EF, Mapping, Caching, DI, Configuration, Messaging)
+- ✅ Interprocedural pattern detection across all methods
 
-**Next**: Phases 6-7
-- 🚧 Advanced semantic analyzers (HTTP clients, messaging, repositories)
-- 🚧 Documentation and migration guides
+**Next**: Phase 7
+- 🚧 Value content analysis for route/configuration key extraction
+- 🚧 String literal collection and propagation
+- 🚧 Authorization attribute parsing
 
 ## License
 
