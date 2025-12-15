@@ -53,9 +53,9 @@ public class ProclaimerFlowGraphController : IController
         _graphBuilder = new ProclaimerFlowGraphBuilder(_labelProvider);
         
         // Get all endpoints
-        var endpoints = await _proclaimerFragment.Slice.GetRootElementsAsync(_proclaimerTypes.EndpointController);
+        var endpoints = await _proclaimerFragment.Slice.GetRootElementsAsync(_proclaimerTypes.Endpoint);
         var endpointsList = endpoints.ToList();
-        
+
         if (endpointsList.Count == 0)
         {
             // No endpoints found - return empty graph
@@ -63,17 +63,17 @@ public class ProclaimerFlowGraphController : IController
                 ImmutableArray<Node>.Empty,
                 ImmutableArray<Edge>.Empty);
         }
-        
+
         // Select first endpoint as root (simple heuristic)
         // In a real implementation, this could be user-selectable
         var rootEndpoint = endpointsList[0];
-        
+
         // Compute flow from this endpoint
         var flowRoot = await _flowService.ComputeFlowAsync(rootEndpoint.Id);
-        
+
         // Build graph
         var graph = await _graphBuilder.BuildGraphAsync(flowRoot);
-        
+
         return graph;
     }
     
