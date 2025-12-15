@@ -1,4 +1,5 @@
 using Slicito.Abstractions;
+using Slicito.Proclaimer.Facts;
 
 namespace Slicito.Proclaimer;
 
@@ -8,6 +9,9 @@ namespace Slicito.Proclaimer;
 /// </summary>
 public interface IProclaimerSliceFragment : ITypedSliceFragment
 {
-    // For initial implementation, we'll discover endpoints and HTTP clients from the DotNet slice
-    // More specialized element queries will be added as we port more analyzers
+    ValueTask<IEnumerable<IProclaimerServiceElement>> GetServicesAsync();
+
+    ValueTask<IEnumerable<IProclaimerEndpointElement>> GetEndpointsAsync();
+
+    ValueTask<IEnumerable<IProclaimerEndpointElement>> GetEndpointsAsync(IProclaimerServiceElement service);
 }

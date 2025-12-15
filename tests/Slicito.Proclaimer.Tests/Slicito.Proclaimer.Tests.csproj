@@ -33,4 +33,8 @@
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\TestUtilities\ProclaimerSamplePaths.cs" Link="Helpers/ProclaimerSamplePaths.cs" />
+  </ItemGroup>
+
 </Project>
