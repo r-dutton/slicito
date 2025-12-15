@@ -7,6 +7,7 @@ using Slicito.DotNet;
 using Slicito.ProgramAnalysis.Notation;
 using Slicito.ProgramAnalysis.SymbolicExecution;
 using Slicito.ProgramAnalysis.Tests.Helpers;
+using Slicito.Tests.Common;
 
 namespace Slicito.ProgramAnalysis.Tests;
 
@@ -21,7 +22,7 @@ public class SymbolicExecutorTest
     [ClassInitialize]
     public static async Task Initialize(TestContext _)
     {
-        const string solutionPath = @"..\..\..\..\inputs\AnalysisSamples\AnalysisSamples.sln";
+        var solutionPath = AnalysisSamplePaths.GetSolutionPath();
         var solution = await MSBuildWorkspace.Create().OpenSolutionAsync(solutionPath);
         
         var typeSystem = new TypeSystem();

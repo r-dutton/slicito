@@ -31,4 +31,8 @@
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\TestUtilities\AnalysisSamplePaths.cs" Link="Helpers/AnalysisSamplePaths.cs" />
+  </ItemGroup>
+
 </Project>

@@ -28,4 +28,8 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Slicito.Proclaimer.Tests" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(ENABLE_ROSLYN_FLOWANALYSIS)' != 'true'">
+    <Compile Remove="FlowAnalysis/**/*.cs" />
+  </ItemGroup>
 </Project>

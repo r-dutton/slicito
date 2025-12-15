@@ -2,152 +2,116 @@
 
 This document tracks progress on integrating TheProclaimer into Slicito as a native extension.
 
-**Last Updated**: 2025-12-07T19:45:00Z  
-**Current Phase**: Phase 1 - Create Slicito.Proclaimer project & schema (Complete!)
+**Last Updated**: 2025-12-15T21:28:04Z
+**Current Phase**: Phase 2 – Core Proclaimer spine (pending)
+
+## Environment Readiness (Codex Cloud)
+
+- .NET SDK **9.0.100** installed locally via `scripts/bootstrap-dotnet.sh` into `./.dotnet`.
+- Z3 **4.12.2** installed via `scripts/bootstrap-z3.sh` into `./.tools/bin/z3`; tests auto-detect the local binary.
+- Analysis sample solution lives under `tests/inputs/AnalysisSamples/` with assembly signing disabled for Linux builds and helper utilities resolving the path cross-platform.
+- Use `./.dotnet/dotnet build Slicito.sln -tlp:disable` and `./.dotnet/dotnet test Slicito.sln -tlp:disable` to avoid the .NET terminal logger crash in this environment.
 
 ---
 
-## Phase 0 – Recon & design (status: done)
+## Phase 0 – Environment bootstrap (status: done)
 
 ### Tasks
 
-- [x] Discover existing Slicito projects and structure
-- [x] Clone and analyze TheProclaimer repository
-- [x] Map current graph/flow/analyzer components
-- [x] Create SlicitoProclaimerDesign.md
-- [x] Initialize state files
-- [x] Verify build system and test infrastructure
-
----
-
-## Phase 1 – Create Slicito.Proclaimer project & schema (status: done)
-
-### Tasks
-
-- [x] Create Slicito.Proclaimer project (netstandard2.0)
-- [x] Add project references (Abstractions, Common, DotNet, ProgramAnalysis)
-- [x] Implement ProclaimerAttributeNames
-- [x] Implement ProclaimerAttributeValues
-- [x] Implement ProclaimerTypes (with all 30+ element types and 27 link types)
-- [x] Implement ProclaimerSchema
-- [x] Add to solution file
-- [x] Add minimal schema tests (7 tests, all passing)
+- [x] Ensure pinned .NET SDK installs locally for repeatable CI-free runs
+- [x] Install Z3 into the repo-local tool path and wire tests to consume it
+- [x] Make AnalysisSamples buildable on Linux and add helpers for locating it in tests
+- [x] Capture the Codex Cloud build/test command sequence in `AGENTS.md`
 
 ### Notes
 
-**Completed**:
-1. Created `src/Slicito.Proclaimer/` project with proper references
-2. Implemented complete schema mapping from GraphKit to Slicito:
-   - 30+ element types (endpoints, CQRS, data access, messaging, etc.)
-   - 27 link types (calls, sends_request, publishes, etc.)
-   - Attribute names and values matching GraphKit constants
-3. ProclaimerTypes implements IProgramTypes for compatibility
-4. Created test project with comprehensive schema validation
-5. All 7 tests pass successfully
-
-**Key Design Decisions**:
-- Used attribute-based discrimination (Kind attribute) to distinguish element/link types
-- Implemented IProgramTypes for compatibility with Slicito's program analysis infrastructure
-- Set endpoints and background services as root element types
-- Stubbed unused IProgramTypes members (Operation, Call, NestedProcedures) since Proclaimer operates at higher abstraction level
+- Bootstrap scripts live under `scripts/bootstrap-dotnet.sh` and `scripts/bootstrap-z3.sh`.
+- Tests can be executed without any external assets or machine-level installs.
 
 ---
 
-## Phase 2 – Slice fragment (services + endpoints + HttpClients) (status: pending)
+## Phase 1 – Upstream parity mapping (status: done)
 
 ### Tasks
 
-- [ ] Define IProclaimerSliceFragment interface
-- [ ] Implement service discovery from projects
-- [ ] Implement endpoint discovery using Slicito.DotNet.AspNetCore
-- [ ] Implement HttpClient detection
-- [ ] Create BelongsToService links
-- [ ] Create SendsHttpRequest links
-- [ ] Add validation tests
+- [x] Clone upstream TheProclaimer under `_upstream/theproclaimer` (gitignored)
+- [x] Audit GraphKit analyzers (controllers, HTTP, EF/repositories, messaging, background services)
+- [x] Audit flow resolution and formatting (FlowAnalysis, Analysis passes, FlowBuilder markdown/JSON)
+- [x] Capture workspace/service mapping inputs (`flow.workspace.json`, `flow.map.json`)
+- [x] Create parity-oriented tracking doc (`docs/ProclaimerParityMatrix.md`) and mapping table in `docs/SlicitoProclaimerDesign.md`
 
 ### Notes
 
-(Notes will be added as we work through this phase)
+- Upstream GraphKit uses interprocedural flow analysis with dedicated passes for deduplication and HTTP/messaging link formation.
+- Workspace configuration binds logical services to solutions + assembly names and base URLs.
 
 ---
 
-## Phase 3 – Flow analysis (first cut) (status: pending)
+## Phase 2 – Core Proclaimer spine (status: pending)
 
 ### Tasks
 
-- [ ] Define FlowNode model
-- [ ] Implement ProclaimerFlowService
-- [ ] Implement BFS/DFS traversal over links
-- [ ] Add logging
-- [ ] Add flow service tests
+- [ ] Validate `Slicito.Proclaimer` project references and package props
+- [ ] Finalize `ProclaimerTypes` and `ProclaimerSchema` names for canonical slice facts
+- [ ] Add schema coverage for services, endpoints, HTTP clients, repositories/DB, messaging, background services
+- [ ] Keep legacy GraphDocument pipelines non-canonical
 
 ### Notes
 
-(Notes will be added as we work through this phase)
+Planned deliverable: stable schema/types that compile cleanly and are ready for slice builders.
 
 ---
 
-## Phase 4 – Labels & view builders (status: pending)
+## Phase 3 – Slice fragment: services + endpoints (status: pending)
 
 ### Tasks
 
-- [ ] Implement ProclaimerLabelProvider
-- [ ] Implement ProclaimerFlowGraphBuilder
-- [ ] Optionally implement ProclaimerFlowTreeBuilder
-- [ ] Add tests for label generation
-- [ ] Add tests for graph building
-
-### Notes
-
-(Notes will be added as we work through this phase)
+- [ ] Implement `IProclaimerSliceFragment` + builder
+- [ ] Map projects/assemblies to Service elements
+- [ ] Discover controller + minimal API endpoints with method/route attributes
+- [ ] Create `BelongsToService` links and navigation anchors
+- [ ] Add sample ASP.NET project + tests validating slice contents
 
 ---
 
-## Phase 5 – VS integration (status: pending)
+## Phase 4 – Slice fragment: HTTP/Repo/Messaging/Background (status: pending)
 
 ### Tasks
 
-- [ ] Implement ProclaimerFlowGraphController
-- [ ] Wire up slice building with Proclaimer fragment
-- [ ] Implement endpoint selection heuristic
-- [ ] Implement navigation commands
-- [ ] Optionally implement ProclaimerFlowTreeController
-- [ ] Test in Visual Studio
-
-### Notes
-
-(Notes will be added as we work through this phase)
+- [ ] Detect HttpClient usage (raw + typed) and emit `SendsHttpRequest` links
+- [ ] Detect repositories/EF/db interactions and emit `ReadsFrom/WritesTo` links
+- [ ] Detect messaging publish/consume patterns and emit `PublishesTo/ConsumesFrom` links
+- [ ] Detect background services and attach to owning services
+- [ ] Expand tests to cover each interaction type
 
 ---
 
-## Phase 6 – Port advanced Proclaimer semantics (status: pending)
+## Phase 5 – Flow semantics (status: pending)
 
 ### Tasks
 
-- [ ] Add repository/DB detection
-- [ ] Add messaging flow detection
-- [ ] Add background service detection
-- [ ] Implement flow grouping/deduplication
-- [ ] Add advanced flow semantics
-
-### Notes
-
-(Notes will be added as we work through this phase)
+- [ ] Implement `ProclaimerFlowService` with grouping/dedup/path semantics from upstream
+- [ ] Add golden snapshot tests comparing flows to upstream FlowGrep output on shared samples
 
 ---
 
-## Phase 7 – Cleanup & migration (status: pending)
+## Phase 6 – Labels & view builders (status: pending)
 
 ### Tasks
 
-- [ ] Mark legacy Proclaimer code as deprecated
-- [ ] Add compatibility layer if needed
-- [ ] Update documentation
-- [ ] Update README
+- [ ] Implement label provider for endpoints/HTTP/DB/messaging
+- [ ] Implement graph + tree builders for VS/CLI consumption
+- [ ] Add tests validating node/edge content and styling attributes
 
-### Notes
+---
 
-(Notes will be added as we work through this phase)
+## Phase 7 – VS integration (status: pending)
+
+### Tasks
+
+- [ ] Implement VS controllers for graph/tree views
+- [ ] Register menus/tool windows and navigation handlers
+- [ ] Add developer doc/screenshots
 
 ---
 
@@ -167,4 +131,14 @@ This document tracks progress on integrating TheProclaimer into Slicito as a nat
 2. Complete Phase 0 by verifying test infrastructure
 3. Begin Phase 1: Create Slicito.Proclaimer project
 
----
+### Session 2 - 2025-12-15
+
+**Activities**:
+1. Bootstrapped Codex Cloud environment (local .NET SDK + Z3, Linux-friendly AnalysisSamples)
+2. Documented reproducible build/test commands in AGENTS.md
+3. Audited upstream TheProclaimer analyzers, flow engine, and workspace inputs
+4. Added parity matrix and upstream-to-Slicito mapping table
+
+**Next Steps**:
+1. Implement Proclaimer schema/types and wire into Slicito.Proclaimer project
+2. Start slice fragment builder for services/endpoints/HTTP

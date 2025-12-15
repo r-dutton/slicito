@@ -361,3 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# Codex tooling
+.dotnet/
+.tools/
+_upstream/
