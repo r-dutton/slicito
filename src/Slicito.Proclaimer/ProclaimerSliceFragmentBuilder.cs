@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Slicito.Abstractions;
 using Slicito.Abstractions.Facts;
 using Slicito.DotNet;
@@ -42,7 +45,8 @@ public class ProclaimerSliceFragmentBuilder : ITypedSliceFragmentBuilder<IProcla
         var dotnetFragment = _dotnetContext.TypedSliceFragment;
 
         var services = await DiscoverServicesAsync(dotnetFragment);
-        var endpoints = await DiscoverEndpointsAsync(dotnetFragment, services);
+        var methodSymbolMap = await BuildMethodSymbolMapAsync();
+        var endpoints = await DiscoverEndpointsAsync(dotnetFragment, services, methodSymbolMap);
 
         var servicesById = services.ToDictionary(s => s.Id, s => s);
         var endpointsById = endpoints.ToDictionary(e => e.Id, e => e);
@@ -128,7 +132,8 @@ public class ProclaimerSliceFragmentBuilder : ITypedSliceFragmentBuilder<IProcla
 
     private async Task<IReadOnlyList<EndpointInfo>> DiscoverEndpointsAsync(
         IDotNetSliceFragment dotnetFragment,
-        IReadOnlyCollection<ServiceInfo> services)
+        IReadOnlyCollection<ServiceInfo> services,
+        IReadOnlyDictionary<IMethodSymbol, ElementInfo> methodSymbolMap)
     {
         var serviceByProjectPath = services.ToDictionary(s => s.ProjectPath, s => s);
 
@@ -138,7 +143,7 @@ public class ProclaimerSliceFragmentBuilder : ITypedSliceFragmentBuilder<IProcla
         var apiEndpoints = await new ApiEndpointList.Builder(_dotnetContext.Slice, _dotnetContext, _dotnetTypes)
             .BuildAsync();
 
-        var results = new List<EndpointInfo>();
+        var results = new Dictionary<ElementId, EndpointInfo>();
 
         foreach (var apiEndpoint in apiEndpoints.Endpoints)
         {
@@ -152,17 +157,170 @@ public class ProclaimerSliceFragmentBuilder : ITypedSliceFragmentBuilder<IProcla
             var endpointId = CreateEndpointId(apiEndpoint.HandlerElement.Id, apiEndpoint.Method, apiEndpoint.Path);
             var codeLocation = await codeLocationProvider(apiEndpoint.HandlerElement.Id);
 
-            results.Add(new EndpointInfo(
+            var endpoint = new EndpointInfo(
                 endpointId,
                 serviceInfo.ServiceName,
                 apiEndpoint.Method.Method,
                 apiEndpoint.Path,
                 serviceInfo.Id,
                 apiEndpoint.HandlerElement,
-                codeLocation));
+                codeLocation);
+
+            if (!results.ContainsKey(endpoint.Id))
+            {
+                results.Add(endpoint.Id, endpoint);
+            }
         }
 
-        return results;
+        var minimalEndpoints = await DiscoverMinimalApiEndpointsAsync(serviceByProjectPath, methodSymbolMap);
+
+        foreach (var endpoint in minimalEndpoints)
+        {
+            if (results.ContainsKey(endpoint.Id))
+            {
+                continue;
+            }
+
+            var codeLocation = await codeLocationProvider(endpoint.Handler.Id);
+            results.Add(endpoint.Id, endpoint with { CodeLocation = codeLocation });
+        }
+
+        return results.Values.ToList();
+    }
+
+    private async Task<Dictionary<IMethodSymbol, ElementInfo>> BuildMethodSymbolMapAsync()
+    {
+        var methods = await DotNetMethodHelper.GetAllMethodsWithDisplayNamesAsync(_dotnetContext.Slice, _dotnetTypes);
+        var map = new Dictionary<IMethodSymbol, ElementInfo>(SymbolEqualityComparer.Default);
+
+        foreach (var method in methods)
+        {
+            if (_dotnetContext.GetSymbol(method.Method.Id) is IMethodSymbol methodSymbol &&
+                !map.ContainsKey(methodSymbol))
+            {
+                map.Add(methodSymbol, method.Method);
+            }
+        }
+
+        return map;
+    }
+
+    private async Task<IReadOnlyList<EndpointInfo>> DiscoverMinimalApiEndpointsAsync(
+        IReadOnlyDictionary<string, ServiceInfo> serviceByProjectPath,
+        IReadOnlyDictionary<IMethodSymbol, ElementInfo> methodSymbolMap)
+    {
+        var results = ImmutableArray.CreateBuilder<EndpointInfo>();
+
+        foreach (var service in serviceByProjectPath.Values)
+        {
+            var project = _dotnetContext.GetProject(service.ProjectId);
+            var compilation = await project.GetCompilationAsync();
+
+            if (compilation is null)
+            {
+                continue;
+            }
+
+            foreach (var syntaxTree in compilation.SyntaxTrees)
+            {
+                var semanticModel = compilation.GetSemanticModel(syntaxTree);
+                var root = await syntaxTree.GetRootAsync();
+
+                foreach (var invocation in root.DescendantNodes().OfType<InvocationExpressionSyntax>())
+                {
+                    var methodSymbol = semanticModel.GetSymbolInfo(invocation).Symbol as IMethodSymbol;
+                    var (httpMethod, route) = GetMinimalApiHttpMethodAndRoute(invocation, methodSymbol, semanticModel);
+
+                    if (httpMethod is null || route is null)
+                    {
+                        continue;
+                    }
+
+                    var handlerSymbol = GetMinimalApiHandlerSymbol(invocation, semanticModel);
+
+                    if (handlerSymbol is null || !methodSymbolMap.TryGetValue(handlerSymbol, out var handlerElement))
+                    {
+                        continue;
+                    }
+
+                    var endpointId = CreateEndpointId(handlerElement.Id, httpMethod, route);
+
+                    results.Add(new EndpointInfo(
+                        endpointId,
+                        service.ServiceName,
+                        httpMethod.Method,
+                        route,
+                        service.Id,
+                        handlerElement,
+                        string.Empty));
+                }
+            }
+        }
+
+        return results.ToImmutable();
+    }
+
+    private static (HttpMethod? HttpMethod, string? Route) GetMinimalApiHttpMethodAndRoute(
+        InvocationExpressionSyntax invocation,
+        IMethodSymbol? methodSymbol,
+        SemanticModel semanticModel)
+    {
+        var candidateMethod = methodSymbol?.ReducedFrom ?? methodSymbol;
+
+        if (candidateMethod is null || !IsMinimalApiMapMethod(candidateMethod))
+        {
+            return (null, null);
+        }
+
+        if (invocation.ArgumentList.Arguments.Count == 0)
+        {
+            return (null, null);
+        }
+
+        var routeExpression = invocation.ArgumentList.Arguments[0].Expression;
+        var route = semanticModel.GetConstantValue(routeExpression).Value as string;
+
+        if (string.IsNullOrWhiteSpace(route))
+        {
+            return (null, null);
+        }
+
+        var httpMethod = new HttpMethod(candidateMethod.Name["Map".Length..].ToUpperInvariant());
+        var normalizedRoute = NormalizeRoute(route!);
+
+        return (httpMethod, normalizedRoute);
+    }
+
+    private static IMethodSymbol? GetMinimalApiHandlerSymbol(InvocationExpressionSyntax invocation, SemanticModel semanticModel)
+    {
+        if (invocation.ArgumentList.Arguments.Count < 2)
+        {
+            return null;
+        }
+
+        var handlerExpression = invocation.ArgumentList.Arguments[1].Expression;
+        var handlerInfo = semanticModel.GetSymbolInfo(handlerExpression);
+
+        return handlerInfo.Symbol as IMethodSymbol ?? handlerInfo.CandidateSymbols.OfType<IMethodSymbol>().FirstOrDefault();
+    }
+
+    private static bool IsMinimalApiMapMethod(IMethodSymbol methodSymbol)
+    {
+        if (!methodSymbol.Name.StartsWith("Map", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var methodName = methodSymbol.Name["Map".Length..];
+
+        return methodName is "Get" or "Post" or "Put" or "Delete" or "Patch" or "Head" or "Options";
+    }
+
+    private static string NormalizeRoute(string route)
+    {
+        var trimmed = route.Trim();
+
+        return trimmed.StartsWith("/", StringComparison.Ordinal) ? trimmed : $"/{trimmed}";
     }
 
     private static ElementId CreateServiceId(ElementId projectId) => new($"proclaimer:service:{projectId.Value}");

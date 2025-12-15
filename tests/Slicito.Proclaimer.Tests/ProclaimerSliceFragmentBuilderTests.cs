@@ -47,8 +47,8 @@ public class ProclaimerSliceFragmentBuilderTests
 
         var services = (await _fragment!.GetServicesAsync()).ToList();
 
-        services.Should().ContainSingle();
-        services[0].ServiceName.Should().Be("SampleWebApi");
+        services.Should().HaveCount(2);
+        services.Select(s => s.ServiceName).Should().BeEquivalentTo(["SampleWebApi", "MinimalWebApi"]);
     }
 
     [TestMethod]
@@ -59,18 +59,23 @@ public class ProclaimerSliceFragmentBuilderTests
 
         var endpoints = (await _fragment!.GetEndpointsAsync()).ToList();
 
-        endpoints.Should().HaveCount(2);
+        endpoints.Should().HaveCount(4);
         endpoints.Should().Contain(e => e.HttpMethod == "GET" && e.Route == "/api/widgets/{id}");
         endpoints.Should().Contain(e => e.HttpMethod == "POST" && e.Route == "/api/widgets/create");
+        endpoints.Should().Contain(e => e.HttpMethod == "GET" && e.Route == "/api/minimal/widgets/{id}");
+        endpoints.Should().Contain(e => e.HttpMethod == "POST" && e.Route == "/api/minimal/widgets");
 
         var belongsToService = _fragment.Slice.GetLinkExplorer(_proclaimerTypes!.BelongsToService);
-        var service = (await _fragment.GetServicesAsync()).Single();
+        var services = (await _fragment.GetServicesAsync()).ToDictionary(s => s.ServiceName);
+        var serviceNameProvider = _fragment.Slice.GetElementAttributeProviderAsyncCallback(ProclaimerAttributeNames.ServiceName);
 
         foreach (var endpoint in endpoints)
         {
             var target = await belongsToService.TryGetTargetElementAsync(endpoint.Id);
             target.Should().NotBeNull();
-            target!.Value.Id.Should().Be(service.Id);
+
+            var serviceName = await serviceNameProvider(target!.Value.Id);
+            services.ContainsKey(serviceName).Should().BeTrue();
         }
     }
 
@@ -95,6 +100,6 @@ public class ProclaimerSliceFragmentBuilderTests
             handlerNames.Add(handlerSymbol.Name);
         }
 
-        handlerNames.Should().BeEquivalentTo(["GetWidget", "CreateWidget"]);
+        handlerNames.Should().BeEquivalentTo(["GetWidget", "CreateWidget", "GetMinimalWidget", "CreateMinimalWidget"]);
     }
 }
