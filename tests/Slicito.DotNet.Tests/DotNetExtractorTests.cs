@@ -6,6 +6,7 @@ using Slicito.Abstractions;
 using Slicito.Common;
 using Slicito.ProgramAnalysis.Interprocedural;
 using Slicito.ProgramAnalysis.Notation;
+using Slicito.Tests.Common;
 
 namespace Slicito.DotNet.Tests;
 
@@ -18,7 +19,7 @@ public class DotNetExtractorTests
     [ClassInitialize]
     public static async Task Initialize(TestContext _)
     {
-        const string solutionPath = @"..\..\..\..\inputs\AnalysisSamples\AnalysisSamples.sln";
+        var solutionPath = AnalysisSamplePaths.GetSolutionPath();
         var solution = await MSBuildWorkspace.Create().OpenSolutionAsync(solutionPath);
         
         var typeSystem = new TypeSystem();

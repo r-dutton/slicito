@@ -1,321 +1,98 @@
 {
-  "currentPhase": 7,
+  "currentPhase": 2,
   "phases": [
     {
       "id": 0,
-      "name": "Recon & design",
+      "name": "Environment bootstrap",
       "status": "done",
       "tasks": [
-        {
-          "id": 1,
-          "title": "Discover existing Slicito projects and structure",
-          "status": "done",
-          "notes": "Explored Slicito.Abstractions, Slicito.DotNet, Slicito.ProgramAnalysis, Slicito.VisualStudio"
-        },
-        {
-          "id": 2,
-          "title": "Clone and analyze TheProclaimer repository",
-          "status": "done",
-          "notes": "Cloned from https://github.com/r-dutton/TheProclaimer, analyzed GraphKit architecture"
-        },
-        {
-          "id": 3,
-          "title": "Map Proclaimer requirements to Slicito architecture",
-          "status": "done",
-          "notes": "Mapped GraphKit NodeTypes/EdgeKinds to Slicito ElementType/LinkType"
-        },
-        {
-          "id": 4,
-          "title": "Create SlicitoProclaimerDesign.md",
-          "status": "done"
-        },
-        {
-          "id": 5,
-          "title": "Initialize state files",
-          "status": "done"
-        },
-        {
-          "id": 6,
-          "title": "Verify build system and test infrastructure",
-          "status": "done",
-          "notes": "Verified MSTest + FluentAssertions test pattern"
-        }
+        { "id": 1, "title": "Install pinned .NET SDK locally", "status": "done", "notes": "scripts/bootstrap-dotnet.sh installs 9.0.100 into ./.dotnet" },
+        { "id": 2, "title": "Install Z3 locally", "status": "done", "notes": "scripts/bootstrap-z3.sh installs 4.12.2 into ./.tools/bin/z3" },
+        { "id": 3, "title": "Make AnalysisSamples runnable on Linux", "status": "done", "notes": "Signing disabled; helper utilities locate samples in tests" },
+        { "id": 4, "title": "Document Codex Cloud build/test commands", "status": "done", "notes": "AGENTS.md lists bootstrap + build/test sequence" }
       ]
     },
     {
       "id": 1,
-      "name": "Create Slicito.Proclaimer project & schema",
-      "status": "in_progress",
+      "name": "Upstream parity mapping",
+      "status": "done",
       "tasks": [
-        {
-          "id": 1,
-          "title": "Create Slicito.Proclaimer project",
-          "status": "done"
-        },
-        {
-          "id": 2,
-          "title": "Add project references",
-          "status": "done"
-        },
-        {
-          "id": 3,
-          "title": "Implement ProclaimerAttributeNames",
-          "status": "done"
-        },
-        {
-          "id": 4,
-          "title": "Implement ProclaimerAttributeValues",
-          "status": "done"
-        },
-        {
-          "id": 5,
-          "title": "Implement ProclaimerTypes",
-          "status": "done"
-        },
-        {
-          "id": 6,
-          "title": "Implement ProclaimerSchema",
-          "status": "done"
-        },
-        {
-          "id": 7,
-          "title": "Add to solution file",
-          "status": "done"
-        },
-        {
-          "id": 8,
-          "title": "Add minimal schema tests",
-          "status": "done",
-          "notes": "7 tests pass, verifying element types, link types, and schema structure"
-        }
+        { "id": 1, "title": "Clone upstream TheProclaimer", "status": "done", "notes": "Cloned into _upstream/theproclaimer (gitignored)" },
+        { "id": 2, "title": "Audit analyzers (controllers/http/repo/db/messaging/background)", "status": "done", "notes": "Reviewed ProjectAnalyzer partials and visitors" },
+        { "id": 3, "title": "Audit flow resolution and formatting", "status": "done", "notes": "Reviewed FlowAnalysis, Analysis passes, and FlowBuilder outputs" },
+        { "id": 4, "title": "Capture workspace/service inputs", "status": "done", "notes": "Documented flow.workspace.json and flow.map.json usage" },
+        { "id": 5, "title": "Create parity matrix and mapping table", "status": "done", "notes": "Added docs/ProclaimerParityMatrix.md and mapping section in design doc" }
       ]
     },
     {
       "id": 2,
-      "name": "Slice fragment (services + endpoints + HttpClients)",
-      "status": "done",
+      "name": "Core Proclaimer spine",
+      "status": "pending",
       "tasks": [
-        {
-          "id": 1,
-          "title": "Define IProclaimerSliceFragment interface",
-          "status": "done"
-        },
-        {
-          "id": 2,
-          "title": "Implement service discovery from projects",
-          "status": "done",
-          "notes": "DotNet projects serve as services"
-        },
-        {
-          "id": 3,
-          "title": "Implement endpoint discovery using Slicito.DotNet.AspNetCore",
-          "status": "done",
-          "notes": "Discovers controller endpoints with HTTP method and route attributes"
-        },
-        {
-          "id": 4,
-          "title": "Implement HttpClient detection",
-          "status": "pending",
-          "notes": "Deferred to Phase 6 - advanced semantics"
-        },
-        {
-          "id": 5,
-          "title": "Create BelongsToService links",
-          "status": "pending",
-          "notes": "Deferred - will link endpoints to projects/services in Phase 6"
-        },
-        {
-          "id": 6,
-          "title": "Create SendsHttpRequest links",
-          "status": "pending",
-          "notes": "Deferred to Phase 6 - requires HTTP client detection"
-        },
-        {
-          "id": 7,
-          "title": "Add validation tests",
-          "status": "done",
-          "notes": "Schema tests validate core infrastructure"
-        }
+        { "id": 1, "title": "Validate Slicito.Proclaimer project references", "status": "pending" },
+        { "id": 2, "title": "Finalize ProclaimerTypes and ProclaimerSchema", "status": "pending" },
+        { "id": 3, "title": "Ensure schema covers services/endpoints/http/repo/db/messaging/background", "status": "pending" },
+        { "id": 4, "title": "Isolate legacy GraphDocument pipeline", "status": "pending" }
       ]
     },
     {
       "id": 3,
-      "name": "Flow analysis (first cut)",
-      "status": "done",
+      "name": "Slice fragment: services + endpoints",
+      "status": "pending",
       "tasks": [
-        {
-          "id": 1,
-          "title": "Define FlowNode model",
-          "status": "done"
-        },
-        {
-          "id": 2,
-          "title": "Implement ProclaimerFlowService",
-          "status": "done"
-        },
-        {
-          "id": 3,
-          "title": "Implement BFS/DFS traversal over links",
-          "status": "done",
-          "notes": "Recursive traversal with depth limit and cycle detection"
-        },
-        {
-          "id": 4,
-          "title": "Add logging",
-          "status": "pending",
-          "notes": "Deferred - can be added later as needed"
-        },
-        {
-          "id": 5,
-          "title": "Add flow service tests",
-          "status": "pending",
-          "notes": "Deferred - integration tests needed with real projects"
-        }
+        { "id": 1, "title": "Implement IProclaimerSliceFragment and builder", "status": "pending" },
+        { "id": 2, "title": "Map projects/assemblies to Service elements", "status": "pending" },
+        { "id": 3, "title": "Discover controller + minimal API endpoints", "status": "pending" },
+        { "id": 4, "title": "Create BelongsToService links and navigation anchors", "status": "pending" },
+        { "id": 5, "title": "Add sample ASP.NET project and endpoint slice tests", "status": "pending" }
       ]
     },
     {
       "id": 4,
-      "name": "Labels & view builders",
-      "status": "done",
+      "name": "Slice fragment: HTTP/Repo/Messaging/Background",
+      "status": "pending",
       "tasks": [
-        {
-          "id": 1,
-          "title": "Implement ProclaimerLabelProvider",
-          "status": "done"
-        },
-        {
-          "id": 2,
-          "title": "Implement ProclaimerFlowGraphBuilder",
-          "status": "done"
-        },
-        {
-          "id": 3,
-          "title": "Optionally implement ProclaimerFlowTreeBuilder",
-          "status": "pending",
-          "notes": "Deferred - Graph view is primary, tree can be added later"
-        },
-        {
-          "id": 4,
-          "title": "Add tests for label generation",
-          "status": "pending",
-          "notes": "Deferred - integration tests needed"
-        },
-        {
-          "id": 5,
-          "title": "Add tests for graph building",
-          "status": "pending",
-          "notes": "Deferred - integration tests needed"
-        }
+        { "id": 1, "title": "Detect HttpClient usage (raw + typed)", "status": "pending" },
+        { "id": 2, "title": "Detect repositories/EF/DB interactions", "status": "pending" },
+        { "id": 3, "title": "Detect messaging publish/consume patterns", "status": "pending" },
+        { "id": 4, "title": "Detect background services and attach to owning services", "status": "pending" },
+        { "id": 5, "title": "Expand tests to cover each interaction type", "status": "pending" }
       ]
     },
     {
       "id": 5,
-      "name": "VS integration",
-      "status": "done",
+      "name": "Flow semantics",
+      "status": "pending",
       "tasks": [
-        {
-          "id": 1,
-          "title": "Implement ProclaimerFlowGraphController",
-          "status": "done"
-        },
-        {
-          "id": 2,
-          "title": "Wire up slice building with Proclaimer fragment",
-          "status": "done"
-        },
-        {
-          "id": 3,
-          "title": "Implement endpoint selection heuristic",
-          "status": "done",
-          "notes": "Uses first endpoint as root - can be enhanced later for user selection"
-        },
-        {
-          "id": 4,
-          "title": "Implement navigation commands",
-          "status": "done"
-        },
-        {
-          "id": 5,
-          "title": "Optionally implement ProclaimerFlowTreeController",
-          "status": "pending",
-          "notes": "Deferred - Graph controller is primary interface"
-        },
-        {
-          "id": 6,
-          "title": "Test in Visual Studio",
-          "status": "pending",
-          "notes": "Requires VS environment - can be tested by user"
-        }
+        { "id": 1, "title": "Implement ProclaimerFlowService with upstream semantics", "status": "pending" },
+        { "id": 2, "title": "Add golden snapshot flow tests", "status": "pending" }
       ]
     },
     {
       "id": 6,
-      "name": "Port advanced Proclaimer semantics",
-      "status": "done",
+      "name": "Labels & view builders",
+      "status": "pending",
       "tasks": [
-        {
-          "id": 1,
-          "title": "Add repository/DB detection",
-          "status": "pending",
-          "notes": "Schema supports it - implementation deferred for future enhancement"
-        },
-        {
-          "id": 2,
-          "title": "Add messaging flow detection",
-          "status": "pending",
-          "notes": "Schema supports it - implementation deferred for future enhancement"
-        },
-        {
-          "id": 3,
-          "title": "Add background service detection",
-          "status": "pending",
-          "notes": "Schema supports it - implementation deferred for future enhancement"
-        },
-        {
-          "id": 4,
-          "title": "Implement flow grouping/deduplication",
-          "status": "pending",
-          "notes": "Can be added as future enhancement to ProclaimerFlowService"
-        },
-        {
-          "id": 5,
-          "title": "Add advanced flow semantics",
-          "status": "done",
-          "notes": "Core flow semantics implemented - additional patterns can be added incrementally"
-        }
+        { "id": 1, "title": "Implement label provider for endpoints/HTTP/DB/messaging", "status": "pending" },
+        { "id": 2, "title": "Implement graph + tree builders", "status": "pending" },
+        { "id": 3, "title": "Add tests validating node/edge content", "status": "pending" }
       ]
     },
     {
       "id": 7,
-      "name": "Cleanup & migration",
-      "status": "done",
+      "name": "VS integration",
+      "status": "pending",
       "tasks": [
-        {
-          "id": 1,
-          "title": "Mark legacy Proclaimer code as deprecated",
-          "status": "done",
-          "notes": "Not applicable - TheProclaimer is separate repository"
-        },
-        {
-          "id": 2,
-          "title": "Add compatibility layer if needed",
-          "status": "done",
-          "notes": "Not needed - clean slate implementation"
-        },
-        {
-          "id": 3,
-          "title": "Update documentation",
-          "status": "done",
-          "notes": "Added comprehensive README.md and updated main README"
-        },
-        {
-          "id": 4,
-          "title": "Update README",
-          "status": "done",
-          "notes": "Added Proclaimer section to main Slicito README"
-        }
+        { "id": 1, "title": "Implement Proclaimer VS controllers", "status": "pending" },
+        { "id": 2, "title": "Register menus/tool windows and navigation", "status": "pending" },
+        { "id": 3, "title": "Add developer doc/screenshots", "status": "pending" }
       ]
     }
   ],
-  "lastUpdated": "2025-12-07T20:05:00.000Z"
+  "lastUpdated": "2025-12-15T21:28:04.000Z",
+  "environment": {
+    "dotnetSdk": "9.0.100 installed via scripts/bootstrap-dotnet.sh into ./.dotnet",
+    "z3": "4.12.2 downloaded via scripts/bootstrap-z3.sh into ./.tools/bin/z3",
+    "analysisSamples": "tests/inputs/AnalysisSamples signing disabled for Linux; helpers resolve path cross-platform"
+  }
 }

@@ -16,6 +16,21 @@ TheProclaimer (https://github.com/r-dutton/TheProclaimer) consists of:
 - **GraphKit**: Core library for code analysis and graph generation
 - **FlowGrep**: CLI tool for querying and visualizing flows
 
+### Upstream → Slicito mapping at a glance
+
+| Upstream component | Source (TheProclaimer) | Slicito.Proclaimer target |
+| --- | --- | --- |
+| Graph model constants (node/edge kinds) | `src/GraphKit/Constants/NodeTypes.cs`, `EdgeKinds.cs` | `ProclaimerTypes` + `ProclaimerSchema` define canonical `ElementType`/`LinkType` values in Slicito |
+| Workspace & service mapping | `src/GraphKit/Workspace/*`, `flow.workspace.json`, `flow.map.json` | Slicito configuration shim that maps solutions/assemblies/base URLs to Service elements during slice building |
+| Controllers & minimal APIs analyzers | `src/GraphKit/Analyzers/ProjectAnalyzer.Controllers*.cs` + visitors | `ProclaimerSliceFragmentBuilder` endpoint discovery (routes + HTTP methods) and `BelongsToService` links |
+| HTTP client analyzer (typed + raw) | `ProjectAnalyzer.Http.cs` + `HttpOperationVisitor` | HTTP client element/link creation (`SendsHttpRequest`) with route/method attributes |
+| Repository/EF analyzers | `ProjectAnalyzer.Repositories.cs`, `EfOperationVisitor` | Repository + Database elements with `ReadsFrom`/`WritesTo` links |
+| Messaging analyzers | `ProjectAnalyzer.Messaging.cs`, `MessagingOperationVisitor` | Queue/Topic elements with `PublishesTo`/`ConsumesFrom` links |
+| Background service analyzer | `ProjectAnalyzer.BackgroundServices.cs` | BackgroundService elements and service membership links |
+| Flow engine (interprocedural) | `FlowAnalysis/*`, `Analysis.Passes/*` (dedupe, message/http linking) | `ProclaimerFlowService` using slice links; grouping/dedup semantics re-expressed atop slice queries |
+| Flow output/formatters | `Outputs/FlowBuilder/*` (Markdown/JSON) | `ProclaimerFlowGraphBuilder` + `ProclaimerFlowTreeBuilder` for VS graph/tree views |
+| CLI entrypoint | `src/FlowGrep` | VS controllers and potential CLI wrapper that calls Slicito services |
+
 ### GraphKit Architecture
 
 **Node Types** (from `GraphKit.Constants.NodeTypes`):
