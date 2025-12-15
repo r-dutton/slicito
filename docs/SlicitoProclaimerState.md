@@ -2,8 +2,8 @@
 
 This document tracks progress on integrating TheProclaimer into Slicito as a native extension.
 
-**Last Updated**: 2025-12-15T21:28:04Z
-**Current Phase**: Phase 2 – Core Proclaimer spine (pending)
+**Last Updated**: 2025-12-15T21:50:46Z
+**Current Phase**: Phase 3 – Slice fragment: services + endpoints (pending)
 
 ## Environment Readiness (Codex Cloud)
 
@@ -47,18 +47,19 @@ This document tracks progress on integrating TheProclaimer into Slicito as a nat
 
 ---
 
-## Phase 2 – Core Proclaimer spine (status: pending)
+## Phase 2 – Core Proclaimer spine (status: done)
 
 ### Tasks
 
-- [ ] Validate `Slicito.Proclaimer` project references and package props
-- [ ] Finalize `ProclaimerTypes` and `ProclaimerSchema` names for canonical slice facts
-- [ ] Add schema coverage for services, endpoints, HTTP clients, repositories/DB, messaging, background services
-- [ ] Keep legacy GraphDocument pipelines non-canonical
+- [x] Validate `Slicito.Proclaimer` project references and package props
+- [x] Finalize `ProclaimerTypes` and `ProclaimerSchema` names for canonical slice facts
+- [x] Add schema coverage for services, endpoints, HTTP clients, repositories/DB, messaging, background services
+- [x] Keep legacy GraphDocument pipelines non-canonical
 
 ### Notes
 
-Planned deliverable: stable schema/types that compile cleanly and are ready for slice builders.
+- Canonical Proclaimer schema now defines Service/Endpoint/HttpClient/Repository/Database/Queue/Topic/BackgroundService elements and BelongsToService/Calls/SendsHttpRequest/ReadsFrom/WritesTo/PublishesTo/ConsumesFrom links.
+- Proclaimer slice builder currently scaffolds the canonical schema and will be extended in Phase 3 for endpoint/service population.
 
 ---
 

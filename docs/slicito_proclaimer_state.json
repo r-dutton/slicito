@@ -1,5 +1,5 @@
 {
-  "currentPhase": 2,
+  "currentPhase": 3,
   "phases": [
     {
       "id": 0,
@@ -27,12 +27,12 @@
     {
       "id": 2,
       "name": "Core Proclaimer spine",
-      "status": "pending",
+      "status": "done",
       "tasks": [
-        { "id": 1, "title": "Validate Slicito.Proclaimer project references", "status": "pending" },
-        { "id": 2, "title": "Finalize ProclaimerTypes and ProclaimerSchema", "status": "pending" },
-        { "id": 3, "title": "Ensure schema covers services/endpoints/http/repo/db/messaging/background", "status": "pending" },
-        { "id": 4, "title": "Isolate legacy GraphDocument pipeline", "status": "pending" }
+        { "id": 1, "title": "Validate Slicito.Proclaimer project references", "status": "done", "notes": "Project references validated for canonical slice dependencies." },
+        { "id": 2, "title": "Finalize ProclaimerTypes and ProclaimerSchema", "status": "done", "notes": "Canonical element/link kinds defined for services/endpoints/http/db/messaging/background services." },
+        { "id": 3, "title": "Ensure schema covers services/endpoints/http/repo/db/messaging/background", "status": "done", "notes": "Schema includes Service, Endpoint, HttpClient, Repository, Database, Queue, Topic, BackgroundService and core links." },
+        { "id": 4, "title": "Isolate legacy GraphDocument pipeline", "status": "done", "notes": "Legacy pipeline kept non-canonical; canonical model is slice-based." }
       ]
     },
     {
@@ -89,7 +89,7 @@
       ]
     }
   ],
-  "lastUpdated": "2025-12-15T21:28:04.000Z",
+  "lastUpdated": "2025-12-15T21:50:46.000Z",
   "environment": {
     "dotnetSdk": "9.0.100 installed via scripts/bootstrap-dotnet.sh into ./.dotnet",
     "z3": "4.12.2 downloaded via scripts/bootstrap-z3.sh into ./.tools/bin/z3",

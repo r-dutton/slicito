@@ -3,11 +3,21 @@ using Slicito.Abstractions;
 namespace Slicito.Proclaimer.Facts;
 
 /// <summary>
-/// Represents a Proclaimer endpoint element (controller endpoint or minimal API).
+/// Represents a discovered service element.
+/// </summary>
+public interface IProclaimerServiceElement
+{
+    ElementId Id { get; }
+    string ServiceName { get; }
+}
+
+/// <summary>
+/// Represents a Proclaimer endpoint element.
 /// </summary>
 public interface IProclaimerEndpointElement
 {
     ElementId Id { get; }
+    string ServiceName { get; }
     string HttpMethod { get; }
     string Route { get; }
 }
@@ -18,30 +28,7 @@ public interface IProclaimerEndpointElement
 public interface IProclaimerHttpClientElement
 {
     ElementId Id { get; }
-}
-
-/// <summary>
-/// Represents a CQRS request element.
-/// </summary>
-public interface IProclaimerCqrsRequestElement
-{
-    ElementId Id { get; }
-}
-
-/// <summary>
-/// Represents a CQRS handler element.
-/// </summary>
-public interface IProclaimerCqrsHandlerElement
-{
-    ElementId Id { get; }
-}
-
-/// <summary>
-/// Represents a message publisher element.
-/// </summary>
-public interface IProclaimerMessagePublisherElement
-{
-    ElementId Id { get; }
+    string ServiceName { get; }
 }
 
 /// <summary>
@@ -50,12 +37,29 @@ public interface IProclaimerMessagePublisherElement
 public interface IProclaimerRepositoryElement
 {
     ElementId Id { get; }
+    string ServiceName { get; }
 }
 
 /// <summary>
-/// Represents an Entity Framework DbContext element.
+/// Represents a database element.
 /// </summary>
-public interface IProclaimerEfDbContextElement
+public interface IProclaimerDatabaseElement
+{
+    ElementId Id { get; }
+}
+
+/// <summary>
+/// Represents a messaging queue element.
+/// </summary>
+public interface IProclaimerQueueElement
+{
+    ElementId Id { get; }
+}
+
+/// <summary>
+/// Represents a messaging topic element.
+/// </summary>
+public interface IProclaimerTopicElement
 {
     ElementId Id { get; }
 }
@@ -66,4 +70,5 @@ public interface IProclaimerEfDbContextElement
 public interface IProclaimerBackgroundServiceElement
 {
     ElementId Id { get; }
+    string ServiceName { get; }
 }

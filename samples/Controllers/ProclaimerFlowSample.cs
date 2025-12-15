@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+using System.Linq;
 using Slicito.Abstractions;
 using Slicito.Abstractions.Models;
 using Slicito.DotNet;
@@ -55,13 +57,13 @@ public class ProclaimerFlowSample
         var fragment = await builder.BuildAsync();
         
         // Get all discovered endpoints
-        var endpoints = await fragment.Slice.GetRootElementsAsync(_proclaimerTypes.EndpointController);
+        var endpoints = await fragment.Slice.GetRootElementsAsync(_proclaimerTypes.Endpoint);
         var endpointsList = endpoints.ToList();
-        
+
         if (endpointsList.Count == 0)
         {
             // No endpoints found
-            return new Graph([], []);
+            return new Graph(ImmutableArray<Node>.Empty, ImmutableArray<Edge>.Empty);
         }
         
         // Analyze flow from first endpoint

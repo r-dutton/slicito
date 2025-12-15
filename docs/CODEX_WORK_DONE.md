@@ -91,3 +91,33 @@ DONE WHEN:
 - ParityMatrix is concrete and test-oriented (not vague).
 
 COMPLETED: 2025-12-15T21:32:20+00:00 | commit: 86093dd (pre-amend)
+
+====== TASK 02 — Ensure Slicito.Proclaimer “core spine” is real and canonical ======
+GOAL:
+- Slicito.Proclaimer project exists, builds, and is referenced correctly.
+- Proclaimer schema/types exist and are used.
+- No legacy GraphDocument pipeline is treated as canonical.
+
+STEPS:
+1) Inspect src/Slicito.Proclaimer:
+   - ensure csproj references appropriate Slicito projects
+   - fix any incorrect package props or analyzers references
+2) Implement/confirm:
+   - ProclaimerTypes
+   - ProclaimerSchema (schema extension)
+   - stable names for ElementTypes/LinkTypes/attributes
+3) Ensure schema includes at minimum:
+   - elements: Service, Endpoint, HttpClient, Repository, Database, Queue/Topic, BackgroundService
+   - links: BelongsToService, Calls, SendsHttpRequest, WritesTo/ReadsFrom, PublishesTo, ConsumesFrom
+4) Ensure any existing legacy types are NOT used as canonical model in Slicito.Proclaimer.
+
+VERIFY:
+- ./.dotnet/dotnet build Slicito.sln succeeds
+
+COMMIT MESSAGE:
+- "feat(proclaimer): solidify schema and project spine"
+
+DONE WHEN:
+- Slicito.Proclaimer compiles cleanly and schema is stable/complete for parity work.
+
+COMPLETED: 2025-12-15T21:50:46+00:00 | commit: ede31c1 (pre-amend)
